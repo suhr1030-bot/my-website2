@@ -25,11 +25,11 @@
       theme: {
         extend: {
           colors: {
-            navy: '#0081A7',    // 深海藍 (主視覺/標題)
-            teal: '#00AFB9',    // 湖水綠 (次要視覺/邊框)
-            cream: '#FDFCDC',   // 奶油白 (背景基調)
-            peach: '#FED9B7',   // 蜜桃粉 (標籤/提亮背景)
-            coral: '#F07167',   // 珊瑚紅 (核心行動/警告)
+            navy: '#0081A7',    // 深海藍
+            teal: '#00AFB9',    // 湖水綠
+            cream: '#FDFCDC',   // 奶油白
+            peach: '#FED9B7',   // 蜜桃粉
+            coral: '#F07167',   // 珊瑚紅
           },
           fontFamily: {
             sans: ['"Noto Sans TC"', 'sans-serif'],
@@ -55,7 +55,7 @@
     const { useState, useEffect, useMemo, useRef } = React;
 
     // ==========================================
-    // 雲端資料庫設定區 (若保持空白則為單機模式)
+    // 雲端資料庫設定區
     // ==========================================
     const firebaseConfig = {
       // apiKey: "YOUR_API_KEY",
@@ -75,16 +75,16 @@
     }
 
     // ==========================================
-    // 基礎元件
+    // 基礎元件庫
     // ==========================================
     const Icon = ({ name, className = "" }) => (
       <span className={`material-symbols-rounded icon ${className}`}>{name}</span>
     );
 
     const DEFAULT_CATEGORIES = ['職涯', '生活', '技術', '投資'];
-    const PREDEFINED_TAGS = ['UI/UX設計', '前端開發', '後端架構', '專案管理', '產品企劃', '數位行銷', '社群經營', '數據分析', 'AI應用', '投資理財', '法務諮詢', '人力資源'];
+    const PREDEFINED_TAGS = ['UI/UX設計', '前端開發', '後端架構', '專案管理', '產品企劃', '數位行銷', '社群經營', '數據分析', '投資理財', '法務諮詢', '人力資源'];
 
-    // 智慧 Hashtag 元件
+    // 智慧標籤元件
     function HashtagInput({ value = [], onChange, suggestions = PREDEFINED_TAGS }) {
       const [input, setInput] = useState('');
       const handleKeyDown = (e) => {
@@ -103,7 +103,7 @@
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2 p-2.5 min-h-[3.2rem] bg-white border border-teal/30 rounded-xl focus-within:ring-2 focus-within:ring-teal transition-all cursor-text" onClick={() => document.getElementById('hashtag-input')?.focus()}>
             {value.map(tag => (
-              <span key={tag} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-bold bg-peach text-navy shadow-sm hover:scale-105 transition-transform">
+              <span key={tag} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-bold bg-peach text-navy shadow-sm">
                 <span className="text-coral mr-0.5 opacity-90">#</span>{tag}
                 <button type="button" onClick={(e) => { e.stopPropagation(); removeTag(tag); }} className="ml-1.5 text-navy hover:text-coral focus:outline-none"><Icon name="close" className="!text-[16px]"/></button>
               </span>
@@ -112,16 +112,15 @@
           </div>
           {(filteredSuggestions.length > 0 || input.trim() !== '') && (
             <div className="bg-white/50 p-3 rounded-xl border border-teal/20 shadow-sm">
-              <div className="text-xs font-bold text-navy/60 mb-2.5 flex items-center justify-between">
-                <div className="flex items-center"><Icon name="sparkles" className="!text-[14px] mr-1 text-coral" />{input.trim() === '' ? '推薦專長 (點擊快速加入)' : `相關建議`}</div>
-                {input.trim() !== '' && <span className="text-teal font-medium hidden sm:inline">按 Enter 直接建立</span>}
+              <div className="text-xs font-bold text-navy/60 mb-2.5 flex items-center">
+                <Icon name="sparkles" className="!text-[14px] mr-1 text-coral" />{input.trim() === '' ? '推薦專長 (點擊加入)' : `相關建議`}
               </div>
               <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto hide-scrollbar">
                 {filteredSuggestions.map(tag => (
                   <button key={tag} type="button" onClick={() => addTag(tag)} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-teal/30 text-navy hover:bg-teal/10 transition-all active:scale-95 shadow-sm"><Icon name="add" className="!text-[14px] mr-1 opacity-50" />{tag}</button>
                 ))}
                 {input.trim() !== '' && !filteredSuggestions.some(t => t.toLowerCase() === input.trim().toLowerCase()) && (
-                  <button type="button" onClick={() => addTag(input)} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-coral text-white hover:opacity-90 transition-all active:scale-95 shadow-sm"><Icon name="add" className="!text-[14px] mr-1 opacity-80" />建立新標籤 "{input.trim()}"</button>
+                  <button type="button" onClick={() => addTag(input)} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-coral text-white transition-all active:scale-95 shadow-sm"><Icon name="add" className="!text-[14px] mr-1" />建立新標籤 "{input.trim()}"</button>
                 )}
               </div>
             </div>
@@ -131,28 +130,26 @@
     }
 
     // ==========================================
-    // 核心系統 (App)
+    // 核心系統 (App主控台)
     // ==========================================
     function App() {
-      const [crmKey, setCrmKey] = useState(() => {
-        const saved = localStorage.getItem('crm_secret_key');
+      const [adminId] = useState(() => {
+        const saved = localStorage.getItem('crm_admin_id');
         if (saved) return saved;
-        const newKey = 'CRM-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        localStorage.setItem('crm_secret_key', newKey);
-        return newKey;
+        const newId = 'DB-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('crm_admin_id', newId);
+        return newId;
       });
 
       const [contacts, setContacts] = useState([]);
       const [isLoading, setIsLoading] = useState(true);
-      const [sharedKey, setSharedKey] = useState(null); 
       
       const [searchTerm, setSearchTerm] = useState('');
       const [selectedCategory, setSelectedCategory] = useState('全部');
       const [isModalOpen, setIsModalOpen] = useState(false);
-      const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
-      const [isQrModalOpen, setIsQrModalOpen] = useState(false); 
-      const [isParsingCard, setIsParsingCard] = useState(false); 
+      const [isParsingCard, setIsParsingCard] = useState(false);
       const [editingId, setEditingId] = useState(null);
+      const [viewingContact, setViewingContact] = useState(null); // 控制獨立檢視視窗
       
       const [formData, setFormData] = useState({
         name: '', role: '', company: '', email: '', phone: '', lineId: '', instagram: '', otherLink: '', cardImage: '', skills: [], notes: '', trustLevel: 3, lastContacted: new Date().toISOString().split('T')[0], category: '技術', customCategory: ''
@@ -160,34 +157,29 @@
 
       const fileInputRef = useRef(null);
 
-      // 解析 URL 參數
+      // 連線資料庫
       useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const share = params.get('share');
-        if (share) setSharedKey(share);
-      }, []);
-
-      // 載入資料
-      useEffect(() => {
-        if (sharedKey) { setIsLoading(false); return; } 
-
-        if (isCloudEnabled) {
-          auth.signInAnonymously().then(() => {
-            const unsubscribe = db.collection(`crm_dbs/${crmKey}/contacts`).onSnapshot(snapshot => {
-              const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-              data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-              setContacts(data);
-              setIsLoading(false);
-            }, err => { console.error(err); setIsLoading(false); });
-            return () => unsubscribe();
-          });
-        } else {
-          const localData = JSON.parse(localStorage.getItem(`crm_data_${crmKey}`) || '[]');
+        if (!isCloudEnabled) {
+          const localData = JSON.parse(localStorage.getItem(`crm_data_${adminId}`) || '[]');
           localData.sort((a, b) => b.createdAt - a.createdAt);
           setContacts(localData);
           setIsLoading(false);
+          return;
         }
-      }, [crmKey, sharedKey]);
+        
+        auth.signInAnonymously().then(() => {
+          const unsubscribe = db.collection(`crm_dbs/${adminId}/contacts`).onSnapshot(snapshot => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            setContacts(data);
+            setIsLoading(false);
+          }, err => { console.error(err); setIsLoading(false); });
+          return () => unsubscribe();
+        }).catch(err => {
+          console.error("連線失敗:", err);
+          setIsLoading(false);
+        });
+      }, [adminId]);
 
       // 儲存資料
       const saveContact = async (e) => {
@@ -198,71 +190,38 @@
         const contactData = { ...formData, category: finalCategory || '未分類', updatedAt: Date.now() };
         delete contactData.customCategory;
 
-        if (isCloudEnabled) {
-          try {
-            if (editingId) {
-              await db.doc(`crm_dbs/${crmKey}/contacts/${editingId}`).update(contactData);
-            } else {
-              await db.collection(`crm_dbs/${crmKey}/contacts`).add({ ...contactData, createdAt: Date.now() });
-            }
-          } catch (err) { alert("雲端儲存失敗，請檢查網路。"); }
-        } else {
-          let newData;
-          if (editingId) {
-            newData = contacts.map(c => c.id === editingId ? { ...c, ...contactData } : c);
+        try {
+          if (isCloudEnabled) {
+            if (editingId) await db.doc(`crm_dbs/${adminId}/contacts/${editingId}`).update(contactData);
+            else await db.collection(`crm_dbs/${adminId}/contacts`).add({ ...contactData, createdAt: Date.now() });
           } else {
-            newData = [{ ...contactData, id: Date.now().toString(), createdAt: Date.now() }, ...contacts];
+            let newData;
+            if (editingId) newData = contacts.map(c => c.id === editingId ? { ...c, ...contactData } : c);
+            else newData = [{ ...contactData, id: Date.now().toString(), createdAt: Date.now() }, ...contacts];
+            setContacts(newData);
+            localStorage.setItem(`crm_data_${adminId}`, JSON.stringify(newData));
           }
-          setContacts(newData);
-          localStorage.setItem(`crm_data_${crmKey}`, JSON.stringify(newData));
+          setIsModalOpen(false);
+          // 若是在檢視狀態下編輯，儲存後更新檢視畫面
+          if (viewingContact) {
+            setViewingContact({ ...viewingContact, ...contactData });
+          }
+        } catch (err) { 
+          alert("儲存失敗"); 
         }
-        setIsModalOpen(false);
       };
 
       // 刪除資料
       const deleteContact = async (id) => {
         if (!window.confirm("確定要刪除這位人才的資料嗎？")) return;
         if (isCloudEnabled) {
-          try { await db.doc(`crm_dbs/${crmKey}/contacts/${id}`).delete(); } catch (e) { alert("刪除失敗"); }
+          try { await db.doc(`crm_dbs/${adminId}/contacts/${id}`).delete(); } catch (e) { alert("刪除失敗"); }
         } else {
           const newData = contacts.filter(c => c.id !== id);
           setContacts(newData);
-          localStorage.setItem(`crm_data_${crmKey}`, JSON.stringify(newData));
+          localStorage.setItem(`crm_data_${adminId}`, JSON.stringify(newData));
         }
-      };
-
-      // 匯出與匯入功能 (單機模式必備)
-      const handleExport = () => {
-        const dataStr = JSON.stringify(contacts);
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-        const link = document.createElement('a');
-        link.setAttribute('href', dataUri);
-        link.setAttribute('download', 'crm_backup.json');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      };
-
-      const handleImport = (e) => {
-        const file = e.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const importedData = JSON.parse(event.target.result);
-            if(Array.isArray(importedData)) {
-              setContacts(importedData);
-              localStorage.setItem(`crm_data_${crmKey}`, JSON.stringify(importedData));
-              alert("資料成功匯入並同步！");
-              setIsSyncModalOpen(false);
-            } else {
-              alert("備份檔格式不正確。");
-            }
-          } catch(err) {
-            alert("讀取檔案失敗。");
-          }
-        };
-        reader.readAsText(file);
+        if (viewingContact && viewingContact.id === id) setViewingContact(null);
       };
 
       // 運算邏輯
@@ -272,12 +231,14 @@
         allCategories.forEach(cat => counts[cat] = contacts.filter(c => c.category === cat).length);
         return counts;
       }, [contacts, allCategories]);
+      
       const allUsedTags = useMemo(() => {
         const tags = new Set();
         contacts.forEach(c => c.skills?.forEach(s => tags.add(s)));
         return Array.from(tags);
       }, [contacts]);
       const combinedSuggestions = useMemo(() => Array.from(new Set([...PREDEFINED_TAGS, ...allUsedTags])), [allUsedTags]);
+      
       const topSkills = useMemo(() => {
         const counts = {};
         contacts.forEach(c => c.skills?.forEach(s => counts[s] = (counts[s] || 0) + 1));
@@ -290,6 +251,24 @@
         const matchCat = selectedCategory === '全部' ? true : c.category === selectedCategory;
         return matchSearch && matchCat;
       }), [contacts, searchTerm, selectedCategory]);
+
+      // 核心變更：將過濾後的人脈，依照「專長標籤」進行分組 (Grouping)
+      const groupedContacts = useMemo(() => {
+        const groups = {};
+        filteredContacts.forEach(c => {
+          if (!c.skills || c.skills.length === 0) {
+            if (!groups['未分類專長']) groups['未分類專長'] = [];
+            groups['未分類專長'].push(c);
+          } else {
+            c.skills.forEach(skill => {
+              if (!groups[skill]) groups[skill] = [];
+              groups[skill].push(c);
+            });
+          }
+        });
+        // 依照群組內的人數多寡降冪排序
+        return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+      }, [filteredContacts]);
 
       const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -305,7 +284,7 @@
             canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
             setFormData(prev => ({ ...prev, cardImage: canvas.toDataURL('image/jpeg', 0.6) }));
-            setTimeout(() => setIsParsingCard(false), 800);
+            setIsParsingCard(false);
           };
           img.src = event.target.result;
         };
@@ -324,23 +303,15 @@
         }
         setIsModalOpen(true);
       };
-
+      
       const closeModal = () => { setIsModalOpen(false); setEditingId(null); };
 
       // ==========================================
-      // 路由畫面渲染
+      // 畫面渲染區塊
       // ==========================================
 
-      if (sharedKey) {
-        return <PublicForm sharedKey={sharedKey} onBack={() => window.location.href = window.location.pathname} isCloudEnabled={isCloudEnabled} db={db} auth={auth} handleImageUpload={handleImageUpload} />;
-      }
-
-      // 決定 QR Code 要分享的網址：有雲端才加上 share 參數，無雲端則分享主網址以便手機開啟
-      const baseUrl = `${window.location.origin}${window.location.pathname}`;
-      const qrUrl = isCloudEnabled ? `${baseUrl}?share=${crmKey}` : baseUrl;
-
       return (
-        <div className="min-h-screen text-slate-800 pb-20 md:pb-0">
+        <div className="min-h-screen text-slate-800 pb-20 md:pb-0 relative">
           {/* Header */}
           <header className="bg-white shadow-sm border-b border-teal/20 sticky top-0 z-30">
             <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -348,26 +319,18 @@
                 <div className="bg-navy p-2 rounded-xl shadow-sm"><Icon name="work" className="text-white !text-[20px]" /></div>
                 <h1 className="text-xl md:text-2xl font-black text-navy tracking-tight">人脈<span className="text-teal">中心</span></h1>
               </div>
-              <div className="flex items-center space-x-2 md:space-x-3">
-                {!isCloudEnabled && <span className="hidden lg:inline text-xs font-bold bg-peach text-coral px-3 py-1 rounded-full shadow-sm mr-2">單機模式</span>}
-                <button onClick={() => setIsSyncModalOpen(true)} className="flex items-center justify-center bg-cream hover:bg-peach/50 text-navy px-3 py-2 rounded-xl transition-all shadow-sm border border-peach">
-                  <Icon name={isCloudEnabled ? "sync_saved_locally" : "save_alt"} className="!text-[20px] md:mr-1.5 text-teal" />
-                  <span className="hidden md:inline font-bold text-sm">{isCloudEnabled ? "跨裝置同步" : "備份與還原"}</span>
-                </button>
-                <button onClick={() => setIsQrModalOpen(true)} className="flex items-center justify-center bg-white border border-navy/30 hover:bg-peach/20 text-navy px-3 py-2 rounded-xl transition-all shadow-sm">
-                  <Icon name="qr_code_scanner" className="!text-[20px] md:mr-1.5" />
-                  <span className="hidden md:inline font-bold text-sm">手機開啟/邀請</span>
-                </button>
-                <button onClick={() => openModal()} className="flex items-center justify-center bg-coral hover:opacity-90 text-white px-4 py-2 rounded-xl transition-all shadow-md">
+              <div className="flex items-center space-x-2">
+                {!isCloudEnabled && <span className="hidden lg:inline text-xs font-bold bg-peach text-coral px-3 py-1 rounded-full shadow-sm mr-2" title="資料僅存於此設備">單機模式</span>}
+                <button onClick={() => openModal()} className="flex items-center justify-center bg-coral hover:opacity-90 text-white px-4 py-2 rounded-xl shadow-md transition-colors">
                   <Icon name="person_add" className="!text-[20px] md:mr-1.5" />
-                  <span className="hidden md:inline font-bold text-sm">新增</span>
+                  <span className="hidden md:inline font-bold text-sm">手動新增</span>
                 </button>
               </div>
             </div>
           </header>
 
           <main className="max-w-7xl mx-auto px-4 py-6">
-            
+            {/* 置頂搜尋 */}
             <div className="bg-navy p-5 rounded-3xl mb-6 shadow-lg shadow-navy/20 relative overflow-hidden flex flex-col md:flex-row items-center justify-between z-20">
               <Icon name="hotel_class" className="absolute top-0 right-10 text-teal/20 !text-[120px] -translate-y-4" />
               <h2 className="text-xl font-black text-white mb-3 md:mb-0 relative z-10 whitespace-nowrap md:mr-6 flex items-center">
@@ -380,6 +343,7 @@
             </div>
 
             <div className="flex flex-col lg:flex-row gap-6">
+              {/* 側邊目錄 */}
               <aside className="w-full lg:w-56 shrink-0">
                 <div className="bg-white rounded-3xl p-4 border border-teal/20 shadow-sm sticky top-[80px]">
                   <h3 className="text-xs font-black text-teal mb-3 px-2 flex items-center uppercase"><Icon name="folder_open" className="!text-[16px] mr-1.5" /> 分類目錄</h3>
@@ -394,8 +358,9 @@
                 </div>
               </aside>
 
+              {/* 主要內容區 */}
               <div className="flex-1 min-w-0">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                   <div className="bg-white p-5 rounded-3xl border border-teal/20 shadow-sm flex flex-col justify-center relative overflow-hidden">
                      <div className="absolute -right-4 -top-4 bg-peach/40 w-20 h-20 rounded-full"></div>
                      <div className="relative z-10">
@@ -417,51 +382,48 @@
                 </div>
 
                 {isLoading ? (
-                  <div className="text-center py-20 text-teal"><Icon name="sync" className="animate-spin !text-[32px] mb-2" /><p className="font-bold">載入資料中...</p></div>
+                  <div className="text-center py-20 text-teal"><Icon name="sync" className="animate-spin !text-[32px] mb-2" /><p className="font-bold">資料載入中...</p></div>
                 ) : filteredContacts.length === 0 ? (
                   <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-teal/40 shadow-sm">
-                    <Icon name="person_search" className="!text-[64px] text-teal/40 mb-4" />
-                    <h3 className="text-xl font-black text-navy mb-2">{contacts.length === 0 ? "立刻建立專屬人脈庫！" : "找不到符合的人才"}</h3>
-                    <p className="text-teal text-sm mb-6">{contacts.length === 0 ? "您的資料會安全記憶在此設備中。" : "請嘗試更換搜尋關鍵字。"}</p>
-                    {contacts.length === 0 && <button onClick={() => openModal()} className="bg-coral text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-coral/30 hover:opacity-90 active:scale-95 transition-all"><Icon name="add" className="mr-1" />新增第一筆資料</button>}
+                    <Icon name="person_add" className="!text-[64px] text-teal/40 mb-4" />
+                    <h3 className="text-xl font-black text-navy mb-2">{contacts.length === 0 ? "準備開始建立人脈吧！" : "找不到符合的人才"}</h3>
+                    <p className="text-teal text-sm mb-6">{contacts.length === 0 ? "點擊右上角「手動新增」，將重要的人脈記錄下來。" : "請嘗試更換搜尋關鍵字。"}</p>
+                    {contacts.length === 0 && <button onClick={() => openModal()} className="bg-coral text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-coral/30 hover:opacity-90 active:scale-95 transition-all"><Icon name="add" className="mr-1" />建立第一筆資料</button>}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                    {filteredContacts.map(contact => (
-                      <div key={contact.id} className="bg-white rounded-3xl shadow-sm border border-teal/20 hover:border-navy/40 transition-all flex flex-col relative overflow-hidden">
-                        <div className="p-5 pb-3">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <span className="inline-block text-[10px] font-black tracking-wider text-navy bg-peach px-2 py-0.5 rounded-md mb-2">{contact.category}</span>
-                              <h3 className="text-lg font-black text-navy flex items-center">
-                                {contact.name}
-                                {contact.cardImage && <Icon name="credit_card" className="ml-2 !text-[18px] text-teal cursor-pointer hover:text-navy" />}
-                              </h3>
-                              <p className="text-teal font-bold text-xs mt-0.5">{contact.role} {contact.company && `@ ${contact.company}`}</p>
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <div className="flex space-x-0.5">{[1, 2, 3, 4, 5].map(s => (<Icon key={s} name="star" className={`!text-[14px] ${s <= contact.trustLevel ? 'text-coral' : 'text-cream'}`} />))}</div>
-                              <div className="flex space-x-1 mt-2">
-                                <button onClick={() => openModal(contact)} className="p-1 text-teal hover:text-navy bg-cream rounded-lg"><Icon name="edit" className="!text-[16px]" /></button>
-                                <button onClick={() => deleteContact(contact.id)} className="p-1 text-coral/70 hover:text-coral bg-cream rounded-lg"><Icon name="delete" className="!text-[16px]" /></button>
+                  // 新版 UI：依照專長分類的橫向卷軸設計
+                  <div className="space-y-8">
+                    {groupedContacts.map(([skill, contactsInSkill]) => (
+                      <div key={skill} className="bg-white rounded-3xl p-5 shadow-sm border border-teal/20 flex flex-col relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-peach/30 to-transparent rounded-bl-full pointer-events-none"></div>
+                        
+                        {/* 專長群組標題 */}
+                        <div className="flex items-center mb-4 relative z-10">
+                          <Icon name="label" className="text-coral mr-2" />
+                          <h3 className="text-lg font-black text-navy">{skill}</h3>
+                          <span className="ml-3 bg-peach text-navy text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">{contactsInSkill.length}</span>
+                        </div>
+                        
+                        {/* 橫向滑動區塊 (解決網頁過長問題) */}
+                        <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-2 -mx-1 px-1 relative z-10">
+                          {contactsInSkill.map(contact => (
+                            <div 
+                              key={contact.id} 
+                              onClick={() => setViewingContact(contact)} 
+                              className="shrink-0 w-64 bg-cream/40 border border-teal/30 rounded-2xl p-4 cursor-pointer hover:bg-white hover:border-navy hover:shadow-md transition-all flex flex-col relative group"
+                            >
+                              <h4 className="font-black text-navy text-base line-clamp-1 pr-6">{contact.name}</h4>
+                              {contact.cardImage && <Icon name="credit_card" className="absolute top-4 right-4 text-teal !text-[18px] group-hover:text-coral transition-colors" />}
+                              <p className="text-xs font-bold text-teal mt-1 line-clamp-1">{contact.role} {contact.company && `@ ${contact.company}`}</p>
+                              
+                              <div className="mt-4 pt-3 border-t border-teal/10 flex justify-between items-center">
+                                <div className="flex space-x-0.5">
+                                  {[1,2,3,4,5].map(s => <Icon key={s} name="star" className={`!text-[12px] ${s <= contact.trustLevel ? 'text-coral' : 'text-teal/20'}`} />)}
+                                </div>
+                                <span className="text-[10px] text-navy bg-peach/50 px-2 py-0.5 rounded-md font-bold group-hover:bg-peach transition-colors">檢視檔案</span>
                               </div>
                             </div>
-                          </div>
-                          {contact.skills && contact.skills.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-3">
-                              {contact.skills.map((skill, idx) => <span key={idx} className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-teal/10 text-navy border border-teal/20">#{skill}</span>)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="mt-auto p-3.5 bg-cream/50 border-t border-teal/10 flex justify-between items-center">
-                          <div className="flex items-center text-[11px] font-bold text-teal"><Icon name="calendar_today" className="!text-[14px] mr-1 text-navy/40" />{contact.lastContacted || '無'}</div>
-                          <div className="flex space-x-1.5">
-                            {contact.lineId && <a href={`https://line.me/R/ti/p/~${contact.lineId}`} target="_blank" className="text-green-600 bg-white p-1.5 rounded-full shadow-sm"><Icon name="chat" className="!text-[16px]" /></a>}
-                            {contact.instagram && <a href={`https://instagram.com/${contact.instagram.replace('@', '')}`} target="_blank" className="text-pink-500 bg-white p-1.5 rounded-full shadow-sm"><Icon name="photo_camera" className="!text-[16px]" /></a>}
-                            {contact.email && <a href={`mailto:${contact.email}`} className="text-navy bg-white p-1.5 rounded-full shadow-sm"><Icon name="mail" className="!text-[16px]" /></a>}
-                            {contact.phone && <a href={`tel:${contact.phone}`} className="text-navy bg-white p-1.5 rounded-full shadow-sm"><Icon name="call" className="!text-[16px]" /></a>}
-                            {contact.otherLink && <a href={contact.otherLink} target="_blank" className="text-navy bg-white p-1.5 rounded-full shadow-sm"><Icon name="link" className="!text-[16px]" /></a>}
-                          </div>
+                          ))}
                         </div>
                       </div>
                     ))}
@@ -471,64 +433,65 @@
             </div>
           </main>
 
-          {/* 新增編輯表單 Modal */}
+          {/* 新增/編輯人脈表單 Modal */}
           {isModalOpen && (
-            <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-center justify-center">
+            <div className="fixed inset-0 z-[60] overflow-y-auto p-4 flex items-center justify-center">
               <div className="fixed inset-0 bg-navy/60 backdrop-blur-sm" onClick={closeModal}></div>
               <div className="relative w-full max-w-2xl bg-white shadow-2xl rounded-3xl border border-teal/30 flex flex-col max-h-[90vh]">
                 <div className="flex justify-between items-center p-5 border-b border-teal/10 shrink-0">
-                  <h3 className="text-xl font-black text-navy">{editingId ? '編輯人才檔案' : '建立新人脈'}</h3>
-                  <button onClick={closeModal} className="text-teal hover:text-navy bg-cream p-1.5 rounded-full"><Icon name="close" /></button>
+                  <h3 className="text-xl font-black text-navy">{editingId ? '編輯檔案' : '手動建檔'}</h3>
+                  <button onClick={closeModal} className="text-teal bg-cream p-1.5 rounded-full hover:bg-peach transition-colors"><Icon name="close" /></button>
                 </div>
                 <div className="p-5 overflow-y-auto hide-scrollbar">
                   <form id="contactForm" onSubmit={saveContact} className="space-y-4">
-                    {/* 名片上傳 */}
-                    <div className="bg-cream/50 border border-peach rounded-2xl p-3 flex flex-col items-center justify-center relative">
-                      <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-                      {isParsingCard ? (
-                        <div className="py-4 flex flex-col items-center text-navy"><Icon name="sync" className="animate-spin mb-2 !text-[32px]" /><span className="font-bold text-sm">AI 影像處理中...</span></div>
-                      ) : formData.cardImage ? (
-                        <div className="relative w-full"><img src={formData.cardImage} className="w-full h-24 object-cover rounded-xl border border-teal/30" /><button type="button" onClick={() => setFormData(p => ({...p, cardImage:''}))} className="absolute top-2 right-2 bg-white p-1 rounded-lg text-coral shadow"><Icon name="delete" className="!text-[16px]"/></button></div>
-                      ) : (
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full py-3 border-2 border-dashed border-teal/40 hover:border-navy text-navy rounded-xl flex items-center justify-center font-bold text-sm transition-colors"><Icon name="photo_camera" className="mr-2 opacity-70" />掃描或上傳名片</button>
-                      )}
-                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-3">
                         <div><label className="text-xs font-bold text-navy block mb-1">姓名 *</label><input required type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none font-bold text-sm" /></div>
                         <div className="flex space-x-2">
-                          <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">職稱</label><input type="text" name="role" value={formData.role} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none text-sm" /></div>
-                          <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">公司</label><input type="text" name="company" value={formData.company} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none text-sm" /></div>
+                          <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">職稱</label><input type="text" name="role" value={formData.role} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl outline-none text-sm" /></div>
+                          <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">公司</label><input type="text" name="company" value={formData.company} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl outline-none text-sm" /></div>
                         </div>
                         <div>
-                          <label className="text-xs font-bold text-navy block mb-1">聯絡方式 (自由選填)</label>
+                          <label className="text-xs font-bold text-navy block mb-1">聯絡方式</label>
                           <div className="grid grid-cols-2 gap-2">
-                            <div className="relative"><Icon name="chat" className="!text-[14px] text-green-500 absolute left-2.5 top-2.5" /><input type="text" name="lineId" value={formData.lineId} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 bg-white border border-teal/20 rounded-xl outline-none text-xs" placeholder="LINE ID" /></div>
-                            <div className="relative"><Icon name="photo_camera" className="!text-[14px] text-pink-500 absolute left-2.5 top-2.5" /><input type="text" name="instagram" value={formData.instagram} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 bg-white border border-teal/20 rounded-xl outline-none text-xs" placeholder="IG" /></div>
-                            <div className="relative"><Icon name="call" className="!text-[14px] text-teal absolute left-2.5 top-2.5" /><input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 bg-white border border-teal/20 rounded-xl outline-none text-xs" placeholder="電話" /></div>
-                            <div className="relative"><Icon name="mail" className="!text-[14px] text-teal absolute left-2.5 top-2.5" /><input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 bg-white border border-teal/20 rounded-xl outline-none text-xs" placeholder="Email" /></div>
+                            <div className="relative"><Icon name="chat" className="!text-[14px] text-green-500 absolute left-2.5 top-2.5" /><input type="text" name="lineId" value={formData.lineId} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 border border-teal/20 rounded-xl outline-none text-xs" placeholder="LINE ID" /></div>
+                            <div className="relative"><Icon name="photo_camera" className="!text-[14px] text-pink-500 absolute left-2.5 top-2.5" /><input type="text" name="instagram" value={formData.instagram} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 border border-teal/20 rounded-xl outline-none text-xs" placeholder="IG" /></div>
+                            <div className="relative"><Icon name="call" className="!text-[14px] text-teal absolute left-2.5 top-2.5" /><input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 border border-teal/20 rounded-xl outline-none text-xs" placeholder="電話" /></div>
+                            <div className="relative"><Icon name="mail" className="!text-[14px] text-teal absolute left-2.5 top-2.5" /><input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 border border-teal/20 rounded-xl outline-none text-xs" placeholder="Email" /></div>
                           </div>
                         </div>
                       </div>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs font-bold text-navy block mb-1">人脈分類</label>
-                          <select name="category" value={formData.category} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl outline-none font-bold text-sm">
+                          <label className="text-xs font-bold text-navy block mb-1">歸屬目錄</label>
+                          <select name="category" value={formData.category} onChange={handleInputChange} className="w-full px-3 py-2 border border-teal/30 rounded-xl outline-none font-bold text-sm">
                             {DEFAULT_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                             <option value="custom">-- 自訂新分類 --</option>
                           </select>
                           {formData.category === 'custom' && <input type="text" name="customCategory" value={formData.customCategory} onChange={handleInputChange} className="w-full mt-2 px-3 py-2 bg-cream border border-peach rounded-xl outline-none text-sm font-bold" placeholder="新分類名稱..." required />}
                         </div>
+                        
+                        {/* 修復：為星星圖示補回 onClick 事件包裹器 */}
                         <div>
                           <label className="text-xs font-bold text-navy block mb-1">信任評等 (1-5)</label>
                           <div className="flex space-x-1 p-1.5 bg-cream/50 rounded-xl border border-teal/20 justify-around">
-                            {[1, 2, 3, 4, 5].map(star => <Icon key={star} name="star" className={`cursor-pointer !text-[24px] ${formData.trustLevel >= star ? 'text-coral' : 'text-teal/20'}`} /> )}
+                            {[1, 2, 3, 4, 5].map(star => (
+                              <button 
+                                key={star} 
+                                type="button" 
+                                onClick={() => setFormData(p => ({ ...p, trustLevel: star }))} 
+                                className="focus:outline-none transition-transform hover:scale-110"
+                              >
+                                <Icon name="star" className={`!text-[24px] ${formData.trustLevel >= star ? 'text-coral' : 'text-teal/20'}`} />
+                              </button>
+                            ))}
                           </div>
                         </div>
-                        <div><label className="text-xs font-bold text-navy block mb-1">專業技能標籤</label><HashtagInput value={formData.skills} onChange={(s) => setFormData(p => ({ ...p, skills: s }))} suggestions={combinedSuggestions} /></div>
+                        
+                        <div><label className="text-xs font-bold text-navy block mb-1">專長標籤</label><HashtagInput value={formData.skills} onChange={(s) => setFormData(p => ({ ...p, skills: s }))} suggestions={combinedSuggestions} /></div>
                       </div>
                     </div>
-                    <div><label className="text-xs font-bold text-navy block mb-1">筆記</label><textarea name="notes" value={formData.notes} onChange={handleInputChange} rows={2} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl outline-none resize-none text-sm" placeholder="記下備註..."></textarea></div>
+                    <div><label className="text-xs font-bold text-navy block mb-1">對話筆記</label><textarea name="notes" value={formData.notes} onChange={handleInputChange} rows={2} className="w-full px-3 py-2 border border-teal/30 rounded-xl outline-none resize-none text-sm" placeholder="記下備註..."></textarea></div>
                   </form>
                 </div>
                 <div className="p-4 border-t border-teal/10 shrink-0 flex justify-end space-x-3 bg-white rounded-b-3xl">
@@ -539,121 +502,72 @@
             </div>
           )}
 
-          {/* 同步金鑰/匯出匯入 Modal */}
-          {isSyncModalOpen && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-              <div className="fixed inset-0 bg-navy/80 backdrop-blur-sm" onClick={() => setIsSyncModalOpen(false)}></div>
-              <div className="relative w-full max-w-sm p-6 bg-white shadow-2xl rounded-3xl border border-teal/30 text-center">
-                <button onClick={() => setIsSyncModalOpen(false)} className="absolute top-4 right-4 text-teal bg-cream p-1.5 rounded-full"><Icon name="close" /></button>
-                <div className="inline-flex bg-peach p-3 rounded-full mb-4 shadow-inner"><Icon name={isCloudEnabled ? "sync" : "save_alt"} className="text-navy !text-[32px]" /></div>
-                <h3 className="text-xl font-black text-navy mb-2">{isCloudEnabled ? "跨裝置同步設定" : "資料備份與還原"}</h3>
-                
-                {isCloudEnabled ? (
-                  <>
-                    <p className="text-xs font-bold text-teal mb-4 leading-relaxed">此為您的專屬資料庫金鑰。<br/>若要在其他設備登入，請複製並載入此金鑰。</p>
-                    <div className="bg-cream p-3 rounded-xl border border-peach mb-4 flex items-center justify-between">
-                      <span className="font-mono font-bold text-navy text-sm tracking-wider">{crmKey}</span>
-                      <button onClick={() => { navigator.clipboard.writeText(crmKey); alert("金鑰已複製！"); }} className="text-coral hover:opacity-70"><Icon name="content_copy" className="!text-[20px]" /></button>
+          {/* 獨立名片檢視視窗 (Modal View) */}
+          {viewingContact && (
+            <div className="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center">
+              <div className="fixed inset-0 bg-navy/60 backdrop-blur-sm" onClick={() => setViewingContact(null)}></div>
+              <div className="relative w-full max-w-md bg-white shadow-2xl rounded-3xl border border-teal/30 flex flex-col max-h-[90vh]">
+                <div className="flex justify-between items-center p-5 border-b border-teal/10 shrink-0 bg-cream/30 rounded-t-3xl">
+                  <h3 className="text-lg font-black text-navy flex items-center"><Icon name="person" className="mr-1.5 text-coral" /> 人脈檔案</h3>
+                  <button onClick={() => setViewingContact(null)} className="text-teal bg-white shadow-sm p-1.5 rounded-full hover:bg-peach transition-colors"><Icon name="close" /></button>
+                </div>
+                <div className="p-6 overflow-y-auto hide-scrollbar space-y-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="inline-block text-[10px] font-black tracking-wider text-navy bg-peach px-2 py-0.5 rounded-md mb-2">{viewingContact.category}</span>
+                      <h2 className="text-3xl font-black text-navy">{viewingContact.name}</h2>
+                      <p className="text-teal font-bold text-sm mt-1">{viewingContact.role} {viewingContact.company && ` @ ${viewingContact.company}`}</p>
                     </div>
-                    <div className="border-t border-teal/20 pt-4 mt-4">
-                      <p className="text-xs font-bold text-navy mb-2">或輸入其他金鑰來載入資料庫：</p>
-                      <div className="flex gap-2">
-                        <input id="importKeyInput" type="text" placeholder="CRM-XXXXX..." className="flex-1 px-3 py-2 bg-white border border-teal/30 rounded-xl outline-none font-mono text-sm uppercase" />
-                        <button onClick={() => { 
-                          const val = document.getElementById('importKeyInput').value.trim(); 
-                          if(val) { localStorage.setItem('crm_secret_key', val.toUpperCase()); window.location.reload(); }
-                        }} className="px-4 py-2 bg-navy text-white font-bold text-sm rounded-xl">載入</button>
-                      </div>
+                    <div className="flex flex-col items-end">
+                      <div className="flex space-x-0.5">{[1, 2, 3, 4, 5].map(s => (<Icon key={s} name="star" className={`!text-[16px] ${s <= viewingContact.trustLevel ? 'text-coral' : 'text-cream'}`} />))}</div>
+                      <span className="text-[10px] text-navy/40 mt-1 font-bold">信任評等</span>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-xs font-bold text-teal mb-6 leading-relaxed">單機模式下資料僅儲存於本瀏覽器。<br/>您可以將資料匯出成檔案，傳至手機或其他設備進行匯入還原。</p>
-                    <div className="space-y-3">
-                      <button onClick={handleExport} className="w-full flex items-center justify-center py-3 bg-navy hover:bg-navy/90 text-white rounded-xl font-bold shadow-md transition-all">
-                        <Icon name="download" className="mr-2 !text-[18px]" /> 下載備份檔 (.json)
-                      </button>
-                      <div className="relative w-full py-3 bg-cream border border-teal/30 hover:border-teal text-navy rounded-xl font-bold overflow-hidden shadow-sm transition-all">
-                        <input type="file" accept=".json" onChange={handleImport} className="absolute inset-0 opacity-0 cursor-pointer" />
-                        <div className="pointer-events-none flex items-center justify-center"><Icon name="upload" className="mr-2 !text-[18px]" /> 載入備份檔</div>
-                      </div>
+                  </div>
+                  
+                  {viewingContact.cardImage && (
+                    <div className="rounded-xl overflow-hidden border border-teal/20 shadow-sm">
+                      <img src={viewingContact.cardImage} alt="名片" className="w-full h-auto object-cover" />
                     </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
+                  )}
 
-          {/* QR Code 分享/邀請 Modal */}
-          {isQrModalOpen && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-              <div className="fixed inset-0 bg-navy/80 backdrop-blur-sm" onClick={() => setIsQrModalOpen(false)}></div>
-              <div className="relative w-full max-w-sm p-6 bg-white shadow-2xl rounded-3xl text-center">
-                <button onClick={() => setIsQrModalOpen(false)} className="absolute top-4 right-4 text-teal bg-cream p-1.5 rounded-full"><Icon name="close" /></button>
-                <div className="mx-auto flex items-center justify-center w-14 h-14 rounded-full bg-peach mb-4 shadow-inner"><Icon name="qr_code" className="!text-[28px] text-navy" /></div>
-                
-                <h3 className="text-xl font-black text-navy mb-2">{isCloudEnabled ? "專屬邀請條碼" : "在手機上開啟系統"}</h3>
-                <p className="text-xs font-bold text-teal mb-4">
-                  {isCloudEnabled 
-                    ? "請對方掃描此條碼，即可開啟專屬名片填寫表單，資料將自動匯入您的資料庫。" 
-                    : "使用手機掃描下方條碼，即可將此系統網址傳送至手機瀏覽器。"}
-                </p>
-                
-                <div className="bg-white p-3 rounded-2xl border-4 border-teal/10 inline-block mb-4">
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=0081A7&data=${encodeURIComponent(qrUrl)}`} alt="QR Code" className="w-40 h-40" />
+                  <div className="bg-cream/50 rounded-2xl p-4 border border-teal/10">
+                    <h4 className="text-xs font-bold text-navy mb-3">聯絡方式</h4>
+                    <div className="grid grid-cols-5 gap-2">
+                      {viewingContact.lineId ? <a href={`https://line.me/R/ti/p/~${viewingContact.lineId}`} target="_blank" className="flex flex-col items-center p-2 bg-white rounded-xl shadow-sm text-green-500 hover:scale-105 transition-transform"><Icon name="chat" className="!text-[20px] mb-1"/><span className="text-[9px] font-bold">LINE</span></a> : <div className="flex flex-col items-center p-2 bg-transparent text-teal/20"><Icon name="chat" className="!text-[20px] mb-1"/><span className="text-[9px]">LINE</span></div>}
+                      {viewingContact.instagram ? <a href={`https://instagram.com/${viewingContact.instagram.replace('@', '')}`} target="_blank" className="flex flex-col items-center p-2 bg-white rounded-xl shadow-sm text-pink-500 hover:scale-105 transition-transform"><Icon name="photo_camera" className="!text-[20px] mb-1"/><span className="text-[9px] font-bold">IG</span></a> : <div className="flex flex-col items-center p-2 bg-transparent text-teal/20"><Icon name="photo_camera" className="!text-[20px] mb-1"/><span className="text-[9px]">IG</span></div>}
+                      {viewingContact.phone ? <a href={`tel:${viewingContact.phone}`} className="flex flex-col items-center p-2 bg-white rounded-xl shadow-sm text-navy hover:scale-105 transition-transform"><Icon name="call" className="!text-[20px] mb-1"/><span className="text-[9px] font-bold">電話</span></a> : <div className="flex flex-col items-center p-2 bg-transparent text-teal/20"><Icon name="call" className="!text-[20px] mb-1"/><span className="text-[9px]">電話</span></div>}
+                      {viewingContact.email ? <a href={`mailto:${viewingContact.email}`} className="flex flex-col items-center p-2 bg-white rounded-xl shadow-sm text-teal hover:scale-105 transition-transform"><Icon name="mail" className="!text-[20px] mb-1"/><span className="text-[9px] font-bold">信箱</span></a> : <div className="flex flex-col items-center p-2 bg-transparent text-teal/20"><Icon name="mail" className="!text-[20px] mb-1"/><span className="text-[9px]">信箱</span></div>}
+                      {viewingContact.otherLink ? <a href={viewingContact.otherLink} target="_blank" className="flex flex-col items-center p-2 bg-white rounded-xl shadow-sm text-coral hover:scale-105 transition-transform"><Icon name="link" className="!text-[20px] mb-1"/><span className="text-[9px] font-bold">連結</span></a> : <div className="flex flex-col items-center p-2 bg-transparent text-teal/20"><Icon name="link" className="!text-[20px] mb-1"/><span className="text-[9px]">連結</span></div>}
+                    </div>
+                  </div>
+
+                  {viewingContact.skills && viewingContact.skills.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold text-navy mb-2 flex items-center"><Icon name="tag" className="!text-[14px] text-coral mr-1" />專業標籤</h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {viewingContact.skills.map(s => <span key={s} className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-teal/10 text-navy border border-teal/20">#{s}</span>)}
+                      </div>
+                    </div>
+                  )}
+
+                  {viewingContact.notes && (
+                    <div>
+                      <h4 className="text-xs font-bold text-navy mb-2 flex items-center"><Icon name="edit_note" className="!text-[14px] text-teal mr-1" />對話筆記</h4>
+                      <p className="text-sm font-medium text-slate-600 bg-white p-4 rounded-xl border border-teal/20 whitespace-pre-wrap leading-relaxed shadow-sm">{viewingContact.notes}</p>
+                    </div>
+                  )}
                 </div>
                 
-                <div className="flex bg-cream p-2 rounded-xl border border-peach text-left items-center">
-                  <input type="text" readOnly value={decodeURI(qrUrl)} className="bg-transparent flex-1 outline-none text-[10px] font-medium text-navy px-1 truncate" />
-                  <button onClick={() => { navigator.clipboard.writeText(decodeURI(qrUrl)); alert("網址已複製！"); }} className="ml-2 px-3 py-1.5 bg-teal hover:bg-navy text-white text-xs font-bold rounded-lg shrink-0 transition-colors">複製</button>
+                <div className="p-4 border-t border-teal/10 shrink-0 flex justify-between items-center bg-white rounded-b-3xl">
+                  <div className="flex items-center text-[10px] font-bold text-teal"><Icon name="calendar_today" className="!text-[14px] mr-1" />最後聯絡：{viewingContact.lastContacted || '無紀錄'}</div>
+                  <div className="flex space-x-2">
+                    <button onClick={() => { setViewingContact(null); deleteContact(viewingContact.id); }} className="px-4 py-2 rounded-xl text-coral bg-coral/10 hover:bg-coral/20 font-bold text-sm transition-colors">刪除</button>
+                    <button onClick={() => { openModal(viewingContact); }} className="px-6 py-2 rounded-xl bg-navy text-white font-black hover:bg-navy/90 shadow-md text-sm transition-colors">編輯</button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
-        </div>
-      );
-    }
-
-    // ==========================================
-    // 外部訪客專屬表單元件
-    // ==========================================
-    function PublicForm({ sharedKey, onBack, isCloudEnabled, db, auth, handleImageUpload }) {
-      const [formData, setFormData] = useState({ name: '', role: '', company: '', phone: '', email: '', skills: [] });
-      const [isSubmitting, setIsSubmitting] = useState(false);
-      const [isSuccess, setIsSuccess] = useState(false);
-
-      const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!isCloudEnabled) { alert("此系統目前處於單機模式，無法接收外部資料。"); return; }
-        try {
-          await auth.signInAnonymously();
-          await db.collection(`crm_dbs/${sharedKey}/contacts`).add({
-            ...formData, category: '新進聯繫', trustLevel: 3, createdAt: Date.now(), updatedAt: Date.now(), notes: '【對方透過邀請碼自行填寫】'
-          });
-          setIsSuccess(true);
-        } catch (err) { alert("傳送失敗。"); }
-      };
-
-      if (isSuccess) return <div className="min-h-screen bg-cream flex items-center justify-center p-4"><div className="bg-white p-8 rounded-3xl text-center"><Icon name="check_circle" className="!text-[64px] text-teal mb-4"/><h2 className="text-xl font-black text-navy mb-4">名片已成功傳送！</h2></div></div>;
-
-      return (
-        <div className="min-h-screen bg-navy flex justify-center items-center py-8 px-4">
-          <div className="bg-white p-6 rounded-3xl w-full max-w-sm relative">
-            <h2 className="text-xl font-black text-navy text-center mb-6 border-b border-teal/20 pb-4">交換專業名片</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div><label className="text-xs font-bold text-navy block mb-1">您的稱呼 *</label><input required type="text" onChange={e=>setFormData(p=>({...p, name: e.target.value}))} className="w-full p-3 bg-cream border border-peach rounded-xl text-sm" /></div>
-              <div className="flex gap-3">
-                <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">職稱</label><input type="text" onChange={e=>setFormData(p=>({...p, role: e.target.value}))} className="w-full p-3 bg-cream border border-peach rounded-xl text-sm" /></div>
-                <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">公司</label><input type="text" onChange={e=>setFormData(p=>({...p, company: e.target.value}))} className="w-full p-3 bg-cream border border-peach rounded-xl text-sm" /></div>
-              </div>
-              <div><label className="text-xs font-bold text-navy block mb-1">電話</label><input type="tel" onChange={e=>setFormData(p=>({...p, phone: e.target.value}))} className="w-full p-3 bg-cream border border-peach rounded-xl text-sm" /></div>
-              <div className="pt-2">
-                <label className="text-xs font-bold text-navy block mb-2"><Icon name="tag" className="!text-[14px] text-coral mr-1"/>您的專業標籤</label>
-                <HashtagInput value={formData.skills} onChange={(s) => setFormData(p => ({ ...p, skills: s }))} />
-              </div>
-              <button type="submit" className="w-full py-3.5 bg-coral text-white font-black rounded-xl shadow-lg mt-4">送出資料</button>
-            </form>
-          </div>
         </div>
       );
     }

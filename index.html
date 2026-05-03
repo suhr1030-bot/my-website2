@@ -5,52 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>專業人脈管理中心 (CRM)</title>
 
-  <!-- 1. CDN 載入 React 核心引擎與 Babel 編譯器 -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- 1. CDN: React 核心引擎與 Babel 編譯器 -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- 2. CDN 載入 Firebase 核心模組 -->
+  <!-- 2. CDN: Firebase 核心模組 -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-  <!-- 3. CDN 載入 Lucide 圖示庫與 Tailwind CSS -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- 3. CDN: Tailwind CSS 與 Google Material Symbols -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
 
-  <!-- Tailwind 客製化設定 -->
+  <!-- 4. Tailwind 客製化設定 -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            navy: '#0081A7',    // 深海藍
-            teal: '#00AFB9',    // 湖水綠
-            cream: '#FDFCDC',   // 奶油白
-            peach: '#FED9B7',   // 蜜桃粉
-            coral: '#F07167',   // 珊瑚紅
+            navy: '#0081A7',    // 深海藍 (主視覺/標題)
+            teal: '#00AFB9',    // 湖水綠 (次要視覺/邊框)
+            cream: '#FDFCDC',   // 奶油白 (背景基調)
+            peach: '#FED9B7',   // 蜜桃粉 (標籤/提亮背景)
+            coral: '#F07167',   // 珊瑚紅 (核心行動/警告)
           },
           fontFamily: {
-            sans: ['"Noto Sans TC"', '"Source Han Sans TC"', 'sans-serif'],
+            sans: ['"Noto Sans TC"', 'sans-serif'],
           }
         }
       }
     }
   </script>
 
-  <!-- 全域 CSS 樣式定義 -->
+  <!-- 5. 全域 CSS -->
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
-    
-    body {
-      background-color: #FDFCDC;
-      margin: 0;
-      font-family: 'Noto Sans TC', 'Source Han Sans TC', sans-serif;
-    }
-    
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+    body { background-color: #FDFCDC; margin: 0; font-family: 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .icon { vertical-align: middle; font-size: inherit; }
   </style>
 </head>
 <body>
@@ -60,141 +55,73 @@
     const { useState, useEffect, useMemo, useRef } = React;
 
     // ==========================================
-    // ⚠️ 系統核心設定：請在此處填入你的 Firebase 金鑰
+    // 雲端資料庫設定區 (若保持空白則為單機模式)
     // ==========================================
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      // apiKey: "YOUR_API_KEY",
+      // authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      // projectId: "YOUR_PROJECT_ID",
+      // storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      // appId: "YOUR_APP_ID"
     };
 
-    const isConfigured = firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY";
+    const isCloudEnabled = firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY";
+    let db = null, auth = null;
     
-    let db = null;
-    let auth = null;
-    let googleProvider = null;
-
-    if (isConfigured) {
+    if (isCloudEnabled) {
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
       auth = firebase.auth();
-      googleProvider = new firebase.auth.GoogleAuthProvider();
     }
 
     // ==========================================
-    // A. 強化防呆版：Lucide 圖示封裝元件
-    // 確保 CDN 載入時間差不會導致 React 崩潰
+    // 基礎元件
     // ==========================================
-    const Icon = ({ name, className = '', size = 24, color = 'currentColor' }) => {
-      const [svgHtml, setSvgHtml] = useState('');
-      
-      useEffect(() => {
-        try {
-          if (window.lucide && window.lucide.icons && window.lucide.icons[name]) {
-            const iconNode = window.lucide.icons[name];
-            const element = window.lucide.createElement(iconNode);
-            element.setAttribute('width', size);
-            element.setAttribute('height', size);
-            element.setAttribute('stroke', color);
-            element.setAttribute('stroke-width', '2');
-            element.setAttribute('stroke-linecap', 'round');
-            element.setAttribute('stroke-linejoin', 'round');
-            element.setAttribute('fill', 'none');
-            setSvgHtml(element.outerHTML);
-          }
-        } catch (error) {
-          console.warn(`Icon ${name} 載入失敗`, error);
-        }
-      }, [name, size, color]);
-
-      return (
-        <span 
-          className={className} 
-          dangerouslySetInnerHTML={{ __html: svgHtml }} 
-          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: size, height: size }} 
-        />
-      );
-    };
+    const Icon = ({ name, className = "" }) => (
+      <span className={`material-symbols-rounded icon ${className}`}>{name}</span>
+    );
 
     const DEFAULT_CATEGORIES = ['職涯', '生活', '技術', '投資'];
-    const PREDEFINED_TAGS = [
-      'UI/UX設計', '前端開發', '後端架構', '全端工程', 'APP開發',
-      '專案管理', '產品企劃', '數位行銷', '社群經營', 'SEO優化',
-      '數據分析', 'AI應用', '區塊鏈', '業務開發', '公關活動',
-      '投資理財', '財務規劃', '法務諮詢', '人力資源', '平面設計'
-    ];
+    const PREDEFINED_TAGS = ['UI/UX設計', '前端開發', '後端架構', '專案管理', '產品企劃', '數位行銷', '社群經營', '數據分析', 'AI應用', '投資理財', '法務諮詢', '人力資源'];
 
-    // ==========================================
-    // B. 智慧 Hashtag 元件
-    // ==========================================
+    // 智慧 Hashtag 元件
     function HashtagInput({ value = [], onChange, suggestions = PREDEFINED_TAGS }) {
       const [input, setInput] = useState('');
-
       const handleKeyDown = (e) => {
-        if (e.key === 'Enter' || e.key === ',') {
-          e.preventDefault();
-          if (input.trim()) addTag(input);
-        }
+        if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); if (input.trim()) addTag(input); }
       };
-
       const addTag = (tag) => {
         const trimmed = tag.trim().replace(/^#+/, '');
         if (trimmed && !value.includes(trimmed)) onChange([...value, trimmed]);
         setInput('');
       };
-
       const removeTag = (tagToRemove) => onChange(value.filter(t => t !== tagToRemove));
-
       const availableSuggestions = suggestions.filter(t => !value.includes(t));
-      const filteredSuggestions = input.trim() === ''
-        ? availableSuggestions
-        : availableSuggestions.filter(t => t.toLowerCase().includes(input.toLowerCase().trim()));
+      const filteredSuggestions = input.trim() === '' ? availableSuggestions : availableSuggestions.filter(t => t.toLowerCase().includes(input.toLowerCase().trim()));
 
       return (
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2 p-2.5 min-h-[3.2rem] bg-white border border-teal/30 rounded-xl focus-within:ring-2 focus-within:ring-teal transition-all cursor-text" onClick={() => document.getElementById('hashtag-input')?.focus()}>
             {value.map(tag => (
-              <span key={tag} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-bold bg-peach text-navy shadow-sm transition-transform hover:scale-105">
+              <span key={tag} className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-bold bg-peach text-navy shadow-sm hover:scale-105 transition-transform">
                 <span className="text-coral mr-0.5 opacity-90">#</span>{tag}
-                <button type="button" onClick={(e) => { e.stopPropagation(); removeTag(tag); }} className="ml-1.5 p-0.5 text-navy hover:text-white hover:bg-coral rounded-full focus:outline-none transition-colors">
-                  <Icon name="X" size={14} />
-                </button>
+                <button type="button" onClick={(e) => { e.stopPropagation(); removeTag(tag); }} className="ml-1.5 text-navy hover:text-coral focus:outline-none"><Icon name="close" className="!text-[16px]"/></button>
               </span>
             ))}
-            <input
-              id="hashtag-input"
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent min-w-[140px] outline-none text-sm font-medium text-slate-700 placeholder-teal/50 py-1"
-              placeholder={value.length === 0 ? "輸入專長或選擇下方建議..." : "繼續新增..."}
-              autoComplete="off"
-            />
+            <input id="hashtag-input" type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} className="flex-1 bg-transparent min-w-[140px] outline-none text-sm font-medium text-slate-700 placeholder-teal/50 py-1" placeholder={value.length === 0 ? "輸入專長或選擇下方建議..." : "繼續新增..."} autoComplete="off" />
           </div>
-
           {(filteredSuggestions.length > 0 || input.trim() !== '') && (
-            <div className="bg-white/50 p-3 rounded-xl border border-teal/20 transition-all shadow-sm">
+            <div className="bg-white/50 p-3 rounded-xl border border-teal/20 shadow-sm">
               <div className="text-xs font-bold text-navy/60 mb-2.5 flex items-center justify-between">
-                <div className="flex items-center">
-                  <Icon name="Sparkles" size={14} className="mr-1 text-coral" />
-                  {input.trim() === '' ? '推薦專長 (點擊快速加入)' : `與「${input.trim()}」相關的建議`}
-                </div>
+                <div className="flex items-center"><Icon name="sparkles" className="!text-[14px] mr-1 text-coral" />{input.trim() === '' ? '推薦專長 (點擊快速加入)' : `相關建議`}</div>
                 {input.trim() !== '' && <span className="text-teal font-medium hidden sm:inline">按 Enter 直接建立</span>}
               </div>
               <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto hide-scrollbar">
                 {filteredSuggestions.map(tag => (
-                  <button key={tag} type="button" onClick={() => addTag(tag)} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-teal/30 text-navy hover:border-navy hover:bg-teal/10 transition-all shadow-sm active:scale-95">
-                    <Icon name="Plus" size={12} className="mr-1 opacity-50" />{tag}
-                  </button>
+                  <button key={tag} type="button" onClick={() => addTag(tag)} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-teal/30 text-navy hover:bg-teal/10 transition-all active:scale-95 shadow-sm"><Icon name="add" className="!text-[14px] mr-1 opacity-50" />{tag}</button>
                 ))}
                 {input.trim() !== '' && !filteredSuggestions.some(t => t.toLowerCase() === input.trim().toLowerCase()) && (
-                  <button type="button" onClick={() => addTag(input)} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-coral border border-coral text-white hover:opacity-90 transition-all shadow-sm active:scale-95">
-                    <Icon name="Plus" size={12} className="mr-1 opacity-80" />建立新標籤 "{input.trim()}"
-                  </button>
+                  <button type="button" onClick={() => addTag(input)} className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-coral text-white hover:opacity-90 transition-all active:scale-95 shadow-sm"><Icon name="add" className="!text-[14px] mr-1 opacity-80" />建立新標籤 "{input.trim()}"</button>
                 )}
               </div>
             </div>
@@ -204,147 +131,165 @@
     }
 
     // ==========================================
-    // C. 主要應用程式元件
+    // 核心系統 (App)
     // ==========================================
     function App() {
-      // 狀態管理：登入與資料
-      const [user, setUser] = useState(null);
-      const [isAuthLoading, setIsAuthLoading] = useState(isConfigured);
-      const [contacts, setContacts] = useState([]);
-      const [isLoadingContacts, setIsLoadingContacts] = useState(false);
-      
-      const [sharedUid, setSharedUid] = useState(null);
-      const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-      const [isCopied, setIsCopied] = useState(false);
-      const [viewingImage, setViewingImage] = useState(null);
+      const [crmKey, setCrmKey] = useState(() => {
+        const saved = localStorage.getItem('crm_secret_key');
+        if (saved) return saved;
+        const newKey = 'CRM-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('crm_secret_key', newKey);
+        return newKey;
+      });
 
+      const [contacts, setContacts] = useState([]);
+      const [isLoading, setIsLoading] = useState(true);
+      const [sharedKey, setSharedKey] = useState(null); 
+      
       const [searchTerm, setSearchTerm] = useState('');
       const [selectedCategory, setSelectedCategory] = useState('全部');
-      
       const [isModalOpen, setIsModalOpen] = useState(false);
+      const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+      const [isQrModalOpen, setIsQrModalOpen] = useState(false); 
+      const [isParsingCard, setIsParsingCard] = useState(false); 
       const [editingId, setEditingId] = useState(null);
-      const [isParsingCard, setIsParsingCard] = useState(false);
       
       const [formData, setFormData] = useState({
-        name: '', role: '', company: '', email: '', phone: '', lineId: '', instagram: '', otherLink: '', cardImage: '',
-        skills: [], notes: '', trustLevel: 3, lastContacted: new Date().toISOString().split('T')[0], category: '技術', customCategory: ''
+        name: '', role: '', company: '', email: '', phone: '', lineId: '', instagram: '', otherLink: '', cardImage: '', skills: [], notes: '', trustLevel: 3, lastContacted: new Date().toISOString().split('T')[0], category: '技術', customCategory: ''
       });
 
       const fileInputRef = useRef(null);
 
-      // --- 解析分享網址 ---
+      // 解析 URL 參數
       useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const share = params.get('share');
-        if (share) setSharedUid(share);
+        if (share) setSharedKey(share);
       }, []);
 
-      // --- Firebase Auth 狀態監聽 ---
+      // 載入資料
       useEffect(() => {
-        if (!isConfigured) return;
-        
-        const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-          if (currentUser) {
-            setUser(currentUser);
-          } else if (sharedUid) {
-            try {
-              await auth.signInAnonymously();
-            } catch (error) {
-              console.error("訪客匿名登入失敗:", error);
-            }
-          } else {
-            setUser(null);
-          }
-          setIsAuthLoading(false);
-        });
+        if (sharedKey) { setIsLoading(false); return; } 
 
-        return () => unsubscribe();
-      }, [sharedUid]);
-
-      // --- 讀取使用者的 Firestore 資料 ---
-      useEffect(() => {
-        if (!isConfigured || !user || sharedUid) return;
-        
-        setIsLoadingContacts(true);
-        const unsubscribe = db.collection(`users/${user.uid}/contacts`)
-          .onSnapshot(
-            (snapshot) => {
+        if (isCloudEnabled) {
+          auth.signInAnonymously().then(() => {
+            const unsubscribe = db.collection(`crm_dbs/${crmKey}/contacts`).onSnapshot(snapshot => {
               const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-              data.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+              data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
               setContacts(data);
-              setIsLoadingContacts(false);
-            },
-            (error) => { 
-              console.error("讀取失敗:", error); 
-              setIsLoadingContacts(false); 
-            }
-          );
-        return () => unsubscribe();
-      }, [user, sharedUid]);
+              setIsLoading(false);
+            }, err => { console.error(err); setIsLoading(false); });
+            return () => unsubscribe();
+          });
+        } else {
+          const localData = JSON.parse(localStorage.getItem(`crm_data_${crmKey}`) || '[]');
+          localData.sort((a, b) => b.createdAt - a.createdAt);
+          setContacts(localData);
+          setIsLoading(false);
+        }
+      }, [crmKey, sharedKey]);
 
-      // --- 登入與登出邏輯 ---
-      const handleGoogleLogin = async () => {
-        setIsAuthLoading(true);
-        try {
-          await auth.signInWithPopup(googleProvider);
-        } catch (error) {
-          console.error("Google 登入失敗:", error);
-          alert("登入失敗，請確認 Firebase 設定是否正確，以及網域是否已加入授權名單。");
-        } finally {
-          setIsAuthLoading(false);
+      // 儲存資料
+      const saveContact = async (e) => {
+        e.preventDefault();
+        if (!formData.name.trim()) return;
+
+        const finalCategory = formData.category === 'custom' ? formData.customCategory.trim() : formData.category;
+        const contactData = { ...formData, category: finalCategory || '未分類', updatedAt: Date.now() };
+        delete contactData.customCategory;
+
+        if (isCloudEnabled) {
+          try {
+            if (editingId) {
+              await db.doc(`crm_dbs/${crmKey}/contacts/${editingId}`).update(contactData);
+            } else {
+              await db.collection(`crm_dbs/${crmKey}/contacts`).add({ ...contactData, createdAt: Date.now() });
+            }
+          } catch (err) { alert("雲端儲存失敗，請檢查網路。"); }
+        } else {
+          let newData;
+          if (editingId) {
+            newData = contacts.map(c => c.id === editingId ? { ...c, ...contactData } : c);
+          } else {
+            newData = [{ ...contactData, id: Date.now().toString(), createdAt: Date.now() }, ...contacts];
+          }
+          setContacts(newData);
+          localStorage.setItem(`crm_data_${crmKey}`, JSON.stringify(newData));
+        }
+        setIsModalOpen(false);
+      };
+
+      // 刪除資料
+      const deleteContact = async (id) => {
+        if (!window.confirm("確定要刪除這位人才的資料嗎？")) return;
+        if (isCloudEnabled) {
+          try { await db.doc(`crm_dbs/${crmKey}/contacts/${id}`).delete(); } catch (e) { alert("刪除失敗"); }
+        } else {
+          const newData = contacts.filter(c => c.id !== id);
+          setContacts(newData);
+          localStorage.setItem(`crm_data_${crmKey}`, JSON.stringify(newData));
         }
       };
 
-      const handleLogout = async () => {
-        if (!window.confirm("確定要登出嗎？")) return;
-        await auth.signOut();
+      // 匯出與匯入功能 (單機模式必備)
+      const handleExport = () => {
+        const dataStr = JSON.stringify(contacts);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const link = document.createElement('a');
+        link.setAttribute('href', dataUri);
+        link.setAttribute('download', 'crm_backup.json');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
       };
 
-      // --- 資料運算邏輯 ---
-      const allCategories = useMemo(() => {
-        const catSet = new Set(DEFAULT_CATEGORIES);
-        contacts.forEach(c => { if (c.category) catSet.add(c.category); });
-        return Array.from(catSet);
-      }, [contacts]);
+      const handleImport = (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedData = JSON.parse(event.target.result);
+            if(Array.isArray(importedData)) {
+              setContacts(importedData);
+              localStorage.setItem(`crm_data_${crmKey}`, JSON.stringify(importedData));
+              alert("資料成功匯入並同步！");
+              setIsSyncModalOpen(false);
+            } else {
+              alert("備份檔格式不正確。");
+            }
+          } catch(err) {
+            alert("讀取檔案失敗。");
+          }
+        };
+        reader.readAsText(file);
+      };
 
+      // 運算邏輯
+      const allCategories = useMemo(() => Array.from(new Set([...DEFAULT_CATEGORIES, ...contacts.map(c => c.category).filter(Boolean)])), [contacts]);
       const categoryCounts = useMemo(() => {
         const counts = { '全部': contacts.length };
-        allCategories.forEach(cat => { counts[cat] = contacts.filter(c => c.category === cat).length; });
+        allCategories.forEach(cat => counts[cat] = contacts.filter(c => c.category === cat).length);
         return counts;
       }, [contacts, allCategories]);
-
       const allUsedTags = useMemo(() => {
-        const tagsSet = new Set();
-        contacts.forEach(c => { if (Array.isArray(c.skills)) c.skills.forEach(s => tagsSet.add(s)); });
-        return Array.from(tagsSet);
+        const tags = new Set();
+        contacts.forEach(c => c.skills?.forEach(s => tags.add(s)));
+        return Array.from(tags);
       }, [contacts]);
-
       const combinedSuggestions = useMemo(() => Array.from(new Set([...PREDEFINED_TAGS, ...allUsedTags])), [allUsedTags]);
-
       const topSkills = useMemo(() => {
         const counts = {};
-        contacts.forEach(contact => {
-          if (Array.isArray(contact.skills)) contact.skills.forEach(skill => { counts[skill] = (counts[skill] || 0) + 1; });
-        });
-        return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(entry => ({ name: entry[0], count: entry[1] }));
+        contacts.forEach(c => c.skills?.forEach(s => counts[s] = (counts[s] || 0) + 1));
+        return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(e => ({ name: e[0], count: e[1] }));
       }, [contacts]);
-
-      const filteredContacts = useMemo(() => {
-        return contacts.filter(contact => {
-          const searchStr = searchTerm.toLowerCase();
-          const matchSearch = 
-            (contact.name || '').toLowerCase().includes(searchStr) || 
-            (contact.role || '').toLowerCase().includes(searchStr) ||
-            (contact.company || '').toLowerCase().includes(searchStr) ||
-            (contact.notes || '').toLowerCase().includes(searchStr) ||
-            (contact.skills || []).some(skill => skill.toLowerCase().includes(searchStr));
-          const matchCategory = selectedCategory === '全部' ? true : contact.category === selectedCategory;
-          return matchSearch && matchCategory;
-        });
-      }, [contacts, searchTerm, selectedCategory]);
-
-      // --- 事件處理 ---
-      const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+      
+      const filteredContacts = useMemo(() => contacts.filter(c => {
+        const searchStr = searchTerm.toLowerCase();
+        const matchSearch = (c.name||'').toLowerCase().includes(searchStr) || (c.role||'').toLowerCase().includes(searchStr) || (c.company||'').toLowerCase().includes(searchStr) || (c.notes||'').toLowerCase().includes(searchStr) || (c.skills||[]).some(s => s.toLowerCase().includes(searchStr));
+        const matchCat = selectedCategory === '全部' ? true : c.category === selectedCategory;
+        return matchSearch && matchCat;
+      }), [contacts, searchTerm, selectedCategory]);
 
       const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -356,27 +301,23 @@
           img.onload = () => {
             const canvas = document.createElement('canvas');
             let w = img.width, h = img.height;
-            if (w > h) { if (w > 800) { h *= 800 / w; w = 800; } } else { if (h > 800) { w *= 800 / h; h = 800; } }
+            if (w > h) { if (w > 600) { h *= 600 / w; w = 600; } } else { if (h > 600) { w *= 600 / h; h = 600; } }
             canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            setFormData(prev => ({ ...prev, cardImage: canvas.toDataURL('image/jpeg', 0.7) }));
-            setTimeout(() => setIsParsingCard(false), 1200);
+            setFormData(prev => ({ ...prev, cardImage: canvas.toDataURL('image/jpeg', 0.6) }));
+            setTimeout(() => setIsParsingCard(false), 800);
           };
           img.src = event.target.result;
         };
         reader.readAsDataURL(file);
       };
 
+      const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
       const openModal = (contact = null) => {
         if (contact) {
           setEditingId(contact.id);
-          setFormData({
-            ...contact,
-            skills: contact.skills || [], notes: contact.notes || '', trustLevel: contact.trustLevel || 3, 
-            lastContacted: contact.lastContacted || new Date().toISOString().split('T')[0],
-            category: allCategories.includes(contact.category) ? contact.category : 'custom',
-            customCategory: allCategories.includes(contact.category) ? '' : (contact.category || '')
-          });
+          setFormData({ ...contact, skills: contact.skills || [], category: allCategories.includes(contact.category) ? contact.category : 'custom', customCategory: allCategories.includes(contact.category) ? '' : contact.category });
         } else {
           setEditingId(null);
           setFormData({ name: '', role: '', company: '', email: '', phone: '', lineId: '', instagram: '', otherLink: '', cardImage: '', skills: [], notes: '', trustLevel: 3, lastContacted: new Date().toISOString().split('T')[0], category: '技術', customCategory: '' });
@@ -386,177 +327,67 @@
 
       const closeModal = () => { setIsModalOpen(false); setEditingId(null); };
 
-      const saveContact = async (e) => {
-        e.preventDefault();
-        if (!formData.name.trim() || !user) return;
-
-        const finalCategory = formData.category === 'custom' ? formData.customCategory.trim() : formData.category;
-        const contactData = { ...formData, category: finalCategory || '未分類', updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-        delete contactData.customCategory;
-
-        try {
-          if (editingId) {
-            await db.doc(`users/${user.uid}/contacts/${editingId}`).update(contactData);
-          } else {
-            await db.collection(`users/${user.uid}/contacts`).add({ ...contactData, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-          }
-        } catch (e) { 
-          console.error("儲存失敗", e); 
-          alert("儲存失敗，請檢查網路連線或資料庫權限。");
-        }
-        closeModal();
-      };
-
-      const deleteContact = async (id) => {
-        if (!window.confirm("確定要刪除這位人才的資料嗎？")) return;
-        try { await db.doc(`users/${user.uid}/contacts/${id}`).delete(); } catch (e) { console.error("刪除失敗", e); }
-      };
-
       // ==========================================
-      // 路由守衛 (Auth Guards) 與 不同狀態的畫面渲染
+      // 路由畫面渲染
       // ==========================================
 
-      // 1. 尚未設定 Firebase 金鑰
-      if (!isConfigured) {
-        return (
-          <div className="min-h-screen bg-cream flex items-center justify-center p-6">
-            <div className="bg-white p-10 rounded-3xl shadow-xl max-w-2xl w-full border border-teal/20 text-center">
-              <Icon name="AlertCircle" size={48} className="text-coral mx-auto mb-4" />
-              <h2 className="text-3xl font-black text-navy mb-4">系統尚未完成連線</h2>
-              <p className="text-teal font-medium mb-8 text-lg">
-                為了確保您的資料安全與記憶功能，請使用文字編輯器打開此 HTML 檔案，<br/>
-                並將您專屬的 <b>Firebase Config</b> 填入程式碼開頭。
-              </p>
-              
-              {/* 【安全修正】: 
-                完全捨棄大括號 {} 來避免 Babel 解析錯誤。
-                使用 HTML Entities (&#123; 和 &#125;) 安全地印出程式碼結構！
-              */}
-              <div className="bg-cream p-5 rounded-xl text-left border border-peach/50 text-navy font-mono text-sm overflow-x-auto shadow-inner whitespace-pre-wrap">
-<span className="text-teal">const</span> firebaseConfig = &#123;
-  apiKey: <span className="text-coral">"您的_API_KEY"</span>,
-  authDomain: <span className="text-coral">"您的專案.firebaseapp.com"</span>,
-  projectId: <span className="text-coral">"您的專案ID"</span>,
-  ...
-&#125;;
-              </div>
-            </div>
-          </div>
-        );
+      if (sharedKey) {
+        return <PublicForm sharedKey={sharedKey} onBack={() => window.location.href = window.location.pathname} isCloudEnabled={isCloudEnabled} db={db} auth={auth} handleImageUpload={handleImageUpload} />;
       }
 
-      // 2. 系統載入中
-      if (isAuthLoading) {
-        return (
-          <div className="min-h-screen bg-cream flex flex-col items-center justify-center">
-            <Icon name="Loader2" size={40} className="text-navy animate-spin mb-4" />
-            <span className="text-navy font-bold tracking-wider">驗證身分中...</span>
-          </div>
-        );
-      }
-
-      // 3. 訪客掃碼填表模式
-      if (sharedUid) {
-        return <PublicForm sharedUid={sharedUid} onBack={() => window.location.href = window.location.pathname} handleImageUpload={handleImageUpload} />;
-      }
-
-      // 4. 管理員尚未登入
-      if (!user) {
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-navy to-teal flex items-center justify-center p-6 font-sans-tc">
-            <div className="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full border border-white/20 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-peach to-coral"></div>
-              <div className="inline-flex bg-peach p-4 rounded-full mb-6 shadow-inner">
-                <Icon name="Briefcase" size={40} className="text-navy" />
-              </div>
-              <h2 className="text-3xl font-black text-navy mb-2">人脈管理中心</h2>
-              <p className="text-teal font-bold mb-8">登入以存取您的雲端專屬人才庫</p>
-              
-              <button 
-                onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center px-6 py-4 bg-white border-2 border-navy/10 hover:border-navy text-navy font-black rounded-2xl transition-all shadow-sm hover:shadow-lg hover:-translate-y-1"
-              >
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6 mr-3" />
-                以 Google 帳號安全登入
-              </button>
-              
-              <p className="mt-8 text-xs text-navy/50 font-medium">您的資料將受到最高等級的雲端加密保護</p>
-            </div>
-          </div>
-        );
-      }
-
-      // 5. 系統主畫面 (已登入)
+      // 決定 QR Code 要分享的網址：有雲端才加上 share 參數，無雲端則分享主網址以便手機開啟
       const baseUrl = `${window.location.origin}${window.location.pathname}`;
-      const shareUrl = `${baseUrl}?share=${user.uid}`;
-      const displayUrl = decodeURI(shareUrl);
-
-      const copyToClipboard = () => {
-        navigator.clipboard.writeText(displayUrl).then(() => {
-          setIsCopied(true); setTimeout(() => setIsCopied(false), 2000);
-        });
-      };
-
-      const simulateScan = () => window.location.href = shareUrl;
+      const qrUrl = isCloudEnabled ? `${baseUrl}?share=${crmKey}` : baseUrl;
 
       return (
-        <div className="min-h-screen text-slate-800">
-          
+        <div className="min-h-screen text-slate-800 pb-20 md:pb-0">
+          {/* Header */}
           <header className="bg-white shadow-sm border-b border-teal/20 sticky top-0 z-30">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
               <div className="flex items-center space-x-3">
-                <div className="bg-navy p-2.5 rounded-xl shadow-sm"><Icon name="Briefcase" color="white" /></div>
-                <h1 className="text-2xl font-black text-navy tracking-tight">人脈<span className="text-teal">中心</span></h1>
+                <div className="bg-navy p-2 rounded-xl shadow-sm"><Icon name="work" className="text-white !text-[20px]" /></div>
+                <h1 className="text-xl md:text-2xl font-black text-navy tracking-tight">人脈<span className="text-teal">中心</span></h1>
               </div>
-              <div className="flex items-center space-x-3">
-                <button onClick={() => setIsQrModalOpen(true)} className="flex items-center justify-center bg-white border border-navy/30 hover:bg-peach/20 text-navy px-4 py-2.5 rounded-full transition-all shadow-sm focus:outline-none">
-                  <Icon name="QrCode" size={20} className="sm:mr-2" />
-                  <span className="hidden sm:inline font-bold">邀請條碼</span>
+              <div className="flex items-center space-x-2 md:space-x-3">
+                {!isCloudEnabled && <span className="hidden lg:inline text-xs font-bold bg-peach text-coral px-3 py-1 rounded-full shadow-sm mr-2">單機模式</span>}
+                <button onClick={() => setIsSyncModalOpen(true)} className="flex items-center justify-center bg-cream hover:bg-peach/50 text-navy px-3 py-2 rounded-xl transition-all shadow-sm border border-peach">
+                  <Icon name={isCloudEnabled ? "sync_saved_locally" : "save_alt"} className="!text-[20px] md:mr-1.5 text-teal" />
+                  <span className="hidden md:inline font-bold text-sm">{isCloudEnabled ? "跨裝置同步" : "備份與還原"}</span>
                 </button>
-                <button onClick={() => openModal()} className="flex items-center justify-center bg-coral hover:opacity-90 text-white px-5 py-2.5 rounded-full transition-all shadow-md hover:-translate-y-0.5 focus:outline-none">
-                  <Icon name="Plus" size={20} className="sm:mr-2" color="white" />
-                  <span className="hidden sm:inline font-bold">新增人脈</span>
+                <button onClick={() => setIsQrModalOpen(true)} className="flex items-center justify-center bg-white border border-navy/30 hover:bg-peach/20 text-navy px-3 py-2 rounded-xl transition-all shadow-sm">
+                  <Icon name="qr_code_scanner" className="!text-[20px] md:mr-1.5" />
+                  <span className="hidden md:inline font-bold text-sm">手機開啟/邀請</span>
                 </button>
-                <button onClick={handleLogout} className="ml-2 flex items-center justify-center bg-cream hover:bg-peach text-navy p-2.5 rounded-full transition-all shadow-sm focus:outline-none" title="登出">
-                  <Icon name="User" size={20} />
+                <button onClick={() => openModal()} className="flex items-center justify-center bg-coral hover:opacity-90 text-white px-4 py-2 rounded-xl transition-all shadow-md">
+                  <Icon name="person_add" className="!text-[20px] md:mr-1.5" />
+                  <span className="hidden md:inline font-bold text-sm">新增</span>
                 </button>
               </div>
             </div>
           </header>
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <main className="max-w-7xl mx-auto px-4 py-6">
             
-            <div className="bg-navy p-5 md:p-6 rounded-3xl mb-8 shadow-lg shadow-navy/20 relative overflow-hidden flex flex-col md:flex-row items-center justify-between z-20">
-              <Icon name="Sparkles" size={128} className="absolute top-0 right-10 text-teal/30 -translate-y-1/2" />
-              <h2 className="text-xl md:text-2xl font-black text-white mb-4 md:mb-0 relative z-10 whitespace-nowrap md:mr-6 flex items-center">
-                <Icon name="Search" className="mr-2 text-peach" /> 找人才
+            <div className="bg-navy p-5 rounded-3xl mb-6 shadow-lg shadow-navy/20 relative overflow-hidden flex flex-col md:flex-row items-center justify-between z-20">
+              <Icon name="hotel_class" className="absolute top-0 right-10 text-teal/20 !text-[120px] -translate-y-4" />
+              <h2 className="text-xl font-black text-white mb-3 md:mb-0 relative z-10 whitespace-nowrap md:mr-6 flex items-center">
+                <Icon name="search" className="mr-1.5 text-peach" /> 找人才
               </h2>
-              <div className="relative z-10 flex-1 w-full flex items-center bg-white rounded-2xl p-2 shadow-inner focus-within:ring-4 focus-within:ring-teal/50 transition-all duration-300">
-                 <input type="text" placeholder="輸入關鍵字：如「UI設計」、「行銷」或人名..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-transparent w-full p-2.5 text-lg text-navy placeholder-teal/70 outline-none font-bold" />
-                 {searchTerm && <button onClick={() => setSearchTerm('')} className="p-2 text-teal hover:text-coral"><Icon name="X" size={20} /></button>}
+              <div className="relative z-10 flex-1 w-full flex items-center bg-white rounded-2xl p-1.5 shadow-inner focus-within:ring-4 focus-within:ring-teal/50 transition-all">
+                 <input type="text" placeholder="搜尋專長、姓名、公司..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-transparent w-full p-2 text-navy placeholder-teal/70 outline-none font-bold" />
+                 {searchTerm && <button onClick={() => setSearchTerm('')} className="p-1.5 text-teal hover:text-coral"><Icon name="close" /></button>}
               </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-8">
-              
-              <aside className="w-full lg:w-64 shrink-0">
-                <div className="bg-white rounded-3xl p-4 border border-teal/20 shadow-sm sticky top-[90px]">
-                  <h3 className="text-xs font-black text-teal mb-3 px-2 tracking-widest flex items-center uppercase">
-                    <Icon name="Folder" size={16} className="mr-1.5" /> 系統目錄
-                  </h3>
+            <div className="flex flex-col lg:flex-row gap-6">
+              <aside className="w-full lg:w-56 shrink-0">
+                <div className="bg-white rounded-3xl p-4 border border-teal/20 shadow-sm sticky top-[80px]">
+                  <h3 className="text-xs font-black text-teal mb-3 px-2 flex items-center uppercase"><Icon name="folder_open" className="!text-[16px] mr-1.5" /> 分類目錄</h3>
                   <nav className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-visible hide-scrollbar space-x-2 lg:space-x-0 lg:space-y-1.5 pb-2 lg:pb-0">
-                    {['全部', ...allCategories].map(cat => (
-                       <button
-                         key={cat}
-                         onClick={() => setSelectedCategory(cat)}
-                         className={`flex-shrink-0 flex items-center justify-between px-4 py-3 rounded-2xl font-bold transition-all text-sm ${
-                           selectedCategory === cat ? 'bg-navy text-white shadow-md' : 'text-slate-600 hover:bg-peach/30 hover:text-navy'
-                         }`}
-                       >
+                    {allCategories.map(cat => (
+                       <button key={cat} onClick={() => setSelectedCategory(cat)} className={`flex-shrink-0 flex items-center justify-between px-4 py-2.5 rounded-xl font-bold transition-all text-sm ${selectedCategory === cat ? 'bg-navy text-white shadow-md' : 'text-slate-600 hover:bg-peach/30 hover:text-navy'}`}>
                           <span className="whitespace-nowrap">{cat}</span>
-                          <span className={`hidden lg:inline-block ml-3 text-xs py-0.5 px-2.5 rounded-full font-black transition-colors ${
-                            selectedCategory === cat ? 'bg-peach text-navy' : 'bg-cream text-teal'
-                          }`}>{categoryCounts[cat] || 0}</span>
+                          <span className={`hidden lg:inline-block ml-3 text-xs py-0.5 px-2.5 rounded-full font-black transition-colors ${selectedCategory === cat ? 'bg-peach text-navy' : 'bg-cream text-teal'}`}>{categoryCounts[cat] || 0}</span>
                        </button>
                     ))}
                   </nav>
@@ -564,84 +395,72 @@
               </aside>
 
               <div className="flex-1 min-w-0">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-white p-6 rounded-3xl border border-teal/20 shadow-sm flex flex-col justify-center relative overflow-hidden group">
-                     <div className="absolute -right-6 -top-6 bg-peach/40 w-24 h-24 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-white p-5 rounded-3xl border border-teal/20 shadow-sm flex flex-col justify-center relative overflow-hidden">
+                     <div className="absolute -right-4 -top-4 bg-peach/40 w-20 h-20 rounded-full"></div>
                      <div className="relative z-10">
-                        <div className="flex items-center space-x-2 mb-2"><Icon name="Users" size={20} className="text-coral" /><h3 className="font-bold text-navy">人脈總數</h3></div>
-                        <div className="text-4xl font-black text-navy">{contacts.length} <span className="text-base font-medium text-teal">位</span></div>
+                        <div className="flex items-center space-x-1.5 mb-1"><Icon name="groups" className="text-coral !text-[20px]" /><h3 className="font-bold text-navy text-sm">人脈總數</h3></div>
+                        <div className="text-3xl font-black text-navy">{contacts.length} <span className="text-sm font-medium text-teal">位</span></div>
                      </div>
                   </div>
-                  <div className="bg-white p-6 rounded-3xl border border-teal/20 shadow-sm md:col-span-2 flex flex-col justify-center">
-                     <div className="flex items-center space-x-2 mb-4"><Icon name="TrendingUp" size={20} className="text-teal"/><h3 className="font-bold text-navy">前段熱門技能</h3></div>
+                  <div className="bg-white p-5 rounded-3xl border border-teal/20 shadow-sm md:col-span-2 flex flex-col justify-center">
+                     <div className="flex items-center space-x-1.5 mb-3"><Icon name="trending_up" className="text-teal !text-[20px]"/><h3 className="font-bold text-navy text-sm">熱門技能標籤</h3></div>
                      <div className="flex flex-wrap gap-2">
                        {topSkills.length > 0 ? topSkills.map(skill => (
-                         <div key={skill.name} className="flex items-center bg-cream border border-peach px-3 py-1.5 rounded-xl text-sm">
-                           <span className="font-bold text-navy mr-2">{skill.name}</span>
-                           <span className="bg-teal/20 text-navy text-xs font-bold px-2 py-0.5 rounded-full">{skill.count}</span>
+                         <div key={skill.name} className="flex items-center bg-cream border border-peach px-2.5 py-1 rounded-lg text-xs">
+                           <span className="font-bold text-navy mr-1.5">{skill.name}</span>
+                           <span className="bg-teal/20 text-navy text-[10px] font-bold px-1.5 py-0.5 rounded-full">{skill.count}</span>
                          </div>
-                       )) : <span className="text-teal text-sm font-medium">持續累積人脈，這裡將顯示您的熱門資源</span>}
+                       )) : <span className="text-teal text-xs font-medium">尚無技能標籤資料</span>}
                      </div>
                   </div>
                 </div>
 
-                {isLoadingContacts ? (
-                  <div className="flex flex-col justify-center items-center py-20 text-teal"><Icon name="Loader2" size={32} className="animate-spin mb-4" /><p className="font-bold">從雲端同步資料中...</p></div>
+                {isLoading ? (
+                  <div className="text-center py-20 text-teal"><Icon name="sync" className="animate-spin !text-[32px] mb-2" /><p className="font-bold">載入資料中...</p></div>
                 ) : filteredContacts.length === 0 ? (
-                  <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-teal/30 shadow-sm">
-                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-cream mb-6"><Icon name="UserPlus" size={48} className="text-teal" /></div>
-                    <h3 className="text-2xl font-black text-navy mb-3">歡迎啟用專屬人脈庫！</h3>
-                    <p className="text-teal font-medium mb-6">您目前尚未建立任何人脈資料。<br/>點擊右上角「新增人脈」，或是生成「邀請條碼」讓對方填寫吧！</p>
-                    <button onClick={() => openModal()} className="inline-flex items-center justify-center bg-coral hover:bg-coral/90 text-white px-8 py-3.5 rounded-full transition-all shadow-lg font-black text-lg">
-                      <Icon name="Plus" size={24} className="mr-2" color="white" />
-                      立刻建立第一筆資料
-                    </button>
+                  <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-teal/40 shadow-sm">
+                    <Icon name="person_search" className="!text-[64px] text-teal/40 mb-4" />
+                    <h3 className="text-xl font-black text-navy mb-2">{contacts.length === 0 ? "立刻建立專屬人脈庫！" : "找不到符合的人才"}</h3>
+                    <p className="text-teal text-sm mb-6">{contacts.length === 0 ? "您的資料會安全記憶在此設備中。" : "請嘗試更換搜尋關鍵字。"}</p>
+                    {contacts.length === 0 && <button onClick={() => openModal()} className="bg-coral text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-coral/30 hover:opacity-90 active:scale-95 transition-all"><Icon name="add" className="mr-1" />新增第一筆資料</button>}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                     {filteredContacts.map(contact => (
-                      <div key={contact.id} className="bg-white rounded-3xl shadow-sm hover:shadow-xl border border-teal/20 hover:border-navy/50 transition-all duration-300 flex flex-col group relative overflow-hidden">
-                        <div className="p-6 pb-4">
-                          <div className="flex justify-between items-start mb-3">
+                      <div key={contact.id} className="bg-white rounded-3xl shadow-sm border border-teal/20 hover:border-navy/40 transition-all flex flex-col relative overflow-hidden">
+                        <div className="p-5 pb-3">
+                          <div className="flex justify-between items-start mb-2">
                             <div>
-                              <span className="inline-block text-xs font-black tracking-widest text-navy bg-peach px-2.5 py-1 rounded-lg mb-3 shadow-sm">{contact.category}</span>
-                              <h3 className="text-xl font-black text-navy line-clamp-1 flex items-center">
+                              <span className="inline-block text-[10px] font-black tracking-wider text-navy bg-peach px-2 py-0.5 rounded-md mb-2">{contact.category}</span>
+                              <h3 className="text-lg font-black text-navy flex items-center">
                                 {contact.name}
-                                {contact.cardImage && <button onClick={() => setViewingImage(contact.cardImage)} className="ml-2 text-teal hover:text-white bg-teal/10 hover:bg-teal p-1.5 rounded-lg transition-colors" title="查看實體名片"><Icon name="CreditCard" size={16} /></button>}
+                                {contact.cardImage && <Icon name="credit_card" className="ml-2 !text-[18px] text-teal cursor-pointer hover:text-navy" />}
                               </h3>
-                              <p className="text-teal font-bold text-sm mt-1 line-clamp-1">{contact.role} {contact.company && ` @ ${contact.company}`}</p>
+                              <p className="text-teal font-bold text-xs mt-0.5">{contact.role} {contact.company && `@ ${contact.company}`}</p>
                             </div>
                             <div className="flex flex-col items-end">
-                              <div className="flex space-x-0.5">
-                                {[1, 2, 3, 4, 5].map(star => (<Icon key={star} name="Star" size={16} className={star <= contact.trustLevel ? 'fill-coral text-coral' : 'fill-cream text-peach'} />))}
-                              </div>
-                              <div className="flex space-x-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => openModal(contact)} className="p-1.5 text-teal hover:text-navy hover:bg-peach/50 rounded-lg transition-colors"><Icon name="Edit2" size={16} /></button>
-                                <button onClick={() => deleteContact(contact.id)} className="p-1.5 text-teal hover:text-coral hover:bg-coral/10 rounded-lg transition-colors"><Icon name="Trash2" size={16} /></button>
+                              <div className="flex space-x-0.5">{[1, 2, 3, 4, 5].map(s => (<Icon key={s} name="star" className={`!text-[14px] ${s <= contact.trustLevel ? 'text-coral' : 'text-cream'}`} />))}</div>
+                              <div className="flex space-x-1 mt-2">
+                                <button onClick={() => openModal(contact)} className="p-1 text-teal hover:text-navy bg-cream rounded-lg"><Icon name="edit" className="!text-[16px]" /></button>
+                                <button onClick={() => deleteContact(contact.id)} className="p-1 text-coral/70 hover:text-coral bg-cream rounded-lg"><Icon name="delete" className="!text-[16px]" /></button>
                               </div>
                             </div>
                           </div>
-
                           {contact.skills && contact.skills.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-4">
-                              {contact.skills.map((skill, idx) => (
-                                <span key={idx} className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-teal/10 text-navy border border-teal/20">
-                                  <span className="text-coral mr-0.5">#</span>{skill}
-                                </span>
-                              ))}
+                            <div className="flex flex-wrap gap-1.5 mt-3">
+                              {contact.skills.map((skill, idx) => <span key={idx} className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-teal/10 text-navy border border-teal/20">#{skill}</span>)}
                             </div>
                           )}
                         </div>
-                        <div className="mt-auto p-4 bg-cream/50 border-t border-teal/10 flex justify-between items-center">
-                          <div className="flex items-center text-xs font-bold text-teal" title="最後聯繫時間">
-                            <Icon name="Calendar" size={16} className="mr-1.5 text-navy/50" />{contact.lastContacted || '尚未紀錄'}
-                          </div>
-                          <div className="flex space-x-2">
-                            {contact.lineId && <a href={`https://line.me/R/ti/p/~${contact.lineId}`} target="_blank" className="text-green-500 hover:scale-110 transition-transform bg-white p-2 rounded-full shadow-sm"><Icon name="MessageCircle" size={16} /></a>}
-                            {contact.instagram && <a href={`https://instagram.com/${contact.instagram.replace('@', '')}`} target="_blank" className="text-pink-500 hover:scale-110 transition-transform bg-white p-2 rounded-full shadow-sm"><Icon name="Instagram" size={16} /></a>}
-                            {contact.email && <a href={`mailto:${contact.email}`} className="text-navy hover:text-teal hover:scale-110 transition-transform bg-white p-2 rounded-full shadow-sm"><Icon name="Mail" size={16} /></a>}
-                            {contact.phone && <a href={`tel:${contact.phone}`} className="text-navy hover:text-teal hover:scale-110 transition-transform bg-white p-2 rounded-full shadow-sm"><Icon name="Phone" size={16} /></a>}
-                            {contact.otherLink && <a href={contact.otherLink} target="_blank" className="text-navy hover:text-teal hover:scale-110 transition-transform bg-white p-2 rounded-full shadow-sm"><Icon name="Link" size={16} /></a>}
+                        <div className="mt-auto p-3.5 bg-cream/50 border-t border-teal/10 flex justify-between items-center">
+                          <div className="flex items-center text-[11px] font-bold text-teal"><Icon name="calendar_today" className="!text-[14px] mr-1 text-navy/40" />{contact.lastContacted || '無'}</div>
+                          <div className="flex space-x-1.5">
+                            {contact.lineId && <a href={`https://line.me/R/ti/p/~${contact.lineId}`} target="_blank" className="text-green-600 bg-white p-1.5 rounded-full shadow-sm"><Icon name="chat" className="!text-[16px]" /></a>}
+                            {contact.instagram && <a href={`https://instagram.com/${contact.instagram.replace('@', '')}`} target="_blank" className="text-pink-500 bg-white p-1.5 rounded-full shadow-sm"><Icon name="photo_camera" className="!text-[16px]" /></a>}
+                            {contact.email && <a href={`mailto:${contact.email}`} className="text-navy bg-white p-1.5 rounded-full shadow-sm"><Icon name="mail" className="!text-[16px]" /></a>}
+                            {contact.phone && <a href={`tel:${contact.phone}`} className="text-navy bg-white p-1.5 rounded-full shadow-sm"><Icon name="call" className="!text-[16px]" /></a>}
+                            {contact.otherLink && <a href={contact.otherLink} target="_blank" className="text-navy bg-white p-1.5 rounded-full shadow-sm"><Icon name="link" className="!text-[16px]" /></a>}
                           </div>
                         </div>
                       </div>
@@ -652,89 +471,141 @@
             </div>
           </main>
 
+          {/* 新增編輯表單 Modal */}
           {isModalOpen && (
-            <div className="fixed inset-0 z-50 overflow-y-auto">
-              <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
-                <div className="fixed inset-0 bg-navy/60 backdrop-blur-sm" onClick={closeModal}></div>
-                <div className="relative w-full max-w-2xl p-6 md:p-8 my-8 text-left bg-white shadow-2xl rounded-3xl border border-teal/30">
-                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-teal/10">
-                    <h3 className="text-2xl font-black text-navy">{editingId ? '編輯檔案' : '建檔新人才'}</h3>
-                    <button onClick={closeModal} className="text-teal hover:text-navy p-2 rounded-full hover:bg-cream"><Icon name="X" size={20} /></button>
-                  </div>
-                  <form onSubmit={saveContact} className="space-y-5">
-                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                      <div className="space-y-4 md:border-r border-teal/10 md:pr-5">
-                        <div><label className="block text-sm font-bold text-navy mb-1">姓名 *</label><input required type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none font-bold text-slate-700 shadow-sm" /></div>
-                        <div>
-                          <label className="block text-sm font-bold text-navy mb-1">職稱與公司</label>
-                          <div className="flex space-x-2">
-                            <input type="text" name="role" value={formData.role} onChange={handleInputChange} className="w-1/2 px-4 py-2.5 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none font-medium shadow-sm" placeholder="職稱" />
-                            <input type="text" name="company" value={formData.company} onChange={handleInputChange} className="w-1/2 px-4 py-2.5 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none font-medium shadow-sm" placeholder="公司" />
-                          </div>
+            <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-center justify-center">
+              <div className="fixed inset-0 bg-navy/60 backdrop-blur-sm" onClick={closeModal}></div>
+              <div className="relative w-full max-w-2xl bg-white shadow-2xl rounded-3xl border border-teal/30 flex flex-col max-h-[90vh]">
+                <div className="flex justify-between items-center p-5 border-b border-teal/10 shrink-0">
+                  <h3 className="text-xl font-black text-navy">{editingId ? '編輯人才檔案' : '建立新人脈'}</h3>
+                  <button onClick={closeModal} className="text-teal hover:text-navy bg-cream p-1.5 rounded-full"><Icon name="close" /></button>
+                </div>
+                <div className="p-5 overflow-y-auto hide-scrollbar">
+                  <form id="contactForm" onSubmit={saveContact} className="space-y-4">
+                    {/* 名片上傳 */}
+                    <div className="bg-cream/50 border border-peach rounded-2xl p-3 flex flex-col items-center justify-center relative">
+                      <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+                      {isParsingCard ? (
+                        <div className="py-4 flex flex-col items-center text-navy"><Icon name="sync" className="animate-spin mb-2 !text-[32px]" /><span className="font-bold text-sm">AI 影像處理中...</span></div>
+                      ) : formData.cardImage ? (
+                        <div className="relative w-full"><img src={formData.cardImage} className="w-full h-24 object-cover rounded-xl border border-teal/30" /><button type="button" onClick={() => setFormData(p => ({...p, cardImage:''}))} className="absolute top-2 right-2 bg-white p-1 rounded-lg text-coral shadow"><Icon name="delete" className="!text-[16px]"/></button></div>
+                      ) : (
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full py-3 border-2 border-dashed border-teal/40 hover:border-navy text-navy rounded-xl flex items-center justify-center font-bold text-sm transition-colors"><Icon name="photo_camera" className="mr-2 opacity-70" />掃描或上傳名片</button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <div><label className="text-xs font-bold text-navy block mb-1">姓名 *</label><input required type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none font-bold text-sm" /></div>
+                        <div className="flex space-x-2">
+                          <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">職稱</label><input type="text" name="role" value={formData.role} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none text-sm" /></div>
+                          <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">公司</label><input type="text" name="company" value={formData.company} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none text-sm" /></div>
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-navy mb-2">聯絡方式</label>
-                          <div className="space-y-2">
-                            <div className="relative"><Icon name="MessageCircle" size={16} className="text-green-500 absolute left-3 top-3.5" /><input type="text" name="lineId" value={formData.lineId} onChange={handleInputChange} className="w-full pl-9 pr-4 py-2 bg-white border border-teal/20 rounded-xl focus:ring-2 focus:ring-teal outline-none text-sm shadow-sm" placeholder="LINE ID" /></div>
-                            <div className="relative"><Icon name="Mail" size={16} className="text-teal absolute left-3 top-3.5" /><input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full pl-9 pr-4 py-2 bg-white border border-teal/20 rounded-xl focus:ring-2 focus:ring-teal outline-none text-sm shadow-sm" placeholder="電子信箱" /></div>
-                            <div className="relative"><Icon name="Phone" size={16} className="text-teal absolute left-3 top-3.5" /><input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full pl-9 pr-4 py-2 bg-white border border-teal/20 rounded-xl focus:ring-2 focus:ring-teal outline-none text-sm shadow-sm" placeholder="聯絡電話" /></div>
+                          <label className="text-xs font-bold text-navy block mb-1">聯絡方式 (自由選填)</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="relative"><Icon name="chat" className="!text-[14px] text-green-500 absolute left-2.5 top-2.5" /><input type="text" name="lineId" value={formData.lineId} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 bg-white border border-teal/20 rounded-xl outline-none text-xs" placeholder="LINE ID" /></div>
+                            <div className="relative"><Icon name="photo_camera" className="!text-[14px] text-pink-500 absolute left-2.5 top-2.5" /><input type="text" name="instagram" value={formData.instagram} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 bg-white border border-teal/20 rounded-xl outline-none text-xs" placeholder="IG" /></div>
+                            <div className="relative"><Icon name="call" className="!text-[14px] text-teal absolute left-2.5 top-2.5" /><input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 bg-white border border-teal/20 rounded-xl outline-none text-xs" placeholder="電話" /></div>
+                            <div className="relative"><Icon name="mail" className="!text-[14px] text-teal absolute left-2.5 top-2.5" /><input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full pl-7 pr-2 py-2 bg-white border border-teal/20 rounded-xl outline-none text-xs" placeholder="Email" /></div>
                           </div>
                         </div>
                       </div>
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         <div>
-                          <label className="block text-sm font-bold text-navy mb-1">人脈分類</label>
-                          <select name="category" value={formData.category} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none font-bold text-slate-700 shadow-sm cursor-pointer">
+                          <label className="text-xs font-bold text-navy block mb-1">人脈分類</label>
+                          <select name="category" value={formData.category} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl outline-none font-bold text-sm">
                             {DEFAULT_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                             <option value="custom">-- 自訂新分類 --</option>
                           </select>
+                          {formData.category === 'custom' && <input type="text" name="customCategory" value={formData.customCategory} onChange={handleInputChange} className="w-full mt-2 px-3 py-2 bg-cream border border-peach rounded-xl outline-none text-sm font-bold" placeholder="新分類名稱..." required />}
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-navy mb-1">信任評等 (1-5星)</label>
-                          <div className="flex space-x-1 p-2 bg-cream/50 rounded-xl border border-teal/20 justify-around shadow-inner">
-                            {[1, 2, 3, 4, 5].map(star => (
-                              <button key={star} type="button" onClick={() => setFormData({...formData, trustLevel: star})} className="focus:outline-none">
-                                <Icon name="Star" size={28} className={formData.trustLevel >= star ? 'fill-coral text-coral' : 'fill-teal/10 text-teal/30'} />
-                              </button>
-                            ))}
+                          <label className="text-xs font-bold text-navy block mb-1">信任評等 (1-5)</label>
+                          <div className="flex space-x-1 p-1.5 bg-cream/50 rounded-xl border border-teal/20 justify-around">
+                            {[1, 2, 3, 4, 5].map(star => <Icon key={star} name="star" className={`cursor-pointer !text-[24px] ${formData.trustLevel >= star ? 'text-coral' : 'text-teal/20'}`} /> )}
                           </div>
                         </div>
-                        <div className="pt-1">
-                          <label className="block text-sm font-bold text-navy mb-1 flex items-center"><Icon name="Tag" size={16} className="text-coral mr-1.5" />專業技能標籤</label>
-                          <HashtagInput value={formData.skills} onChange={(newSkills) => setFormData(prev => ({ ...prev, skills: newSkills }))} suggestions={combinedSuggestions} />
-                        </div>
+                        <div><label className="text-xs font-bold text-navy block mb-1">專業技能標籤</label><HashtagInput value={formData.skills} onChange={(s) => setFormData(p => ({ ...p, skills: s }))} suggestions={combinedSuggestions} /></div>
                       </div>
                     </div>
-                    <div className="mt-8 flex justify-end space-x-3 pt-5 border-t border-teal/10">
-                      <button type="button" onClick={closeModal} className="px-6 py-2.5 rounded-xl text-teal font-bold hover:bg-cream hover:text-navy transition-colors">取消</button>
-                      <button type="submit" className="px-8 py-2.5 rounded-xl bg-coral text-white font-black hover:opacity-90 shadow-lg shadow-coral/20">儲存</button>
-                    </div>
+                    <div><label className="text-xs font-bold text-navy block mb-1">筆記</label><textarea name="notes" value={formData.notes} onChange={handleInputChange} rows={2} className="w-full px-3 py-2 bg-white border border-teal/30 rounded-xl outline-none resize-none text-sm" placeholder="記下備註..."></textarea></div>
                   </form>
+                </div>
+                <div className="p-4 border-t border-teal/10 shrink-0 flex justify-end space-x-3 bg-white rounded-b-3xl">
+                  <button type="button" onClick={closeModal} className="px-5 py-2 rounded-xl text-teal font-bold hover:bg-cream">取消</button>
+                  <button type="submit" form="contactForm" className="px-6 py-2 rounded-xl bg-coral text-white font-black hover:opacity-90 shadow-lg shadow-coral/30">儲存資料</button>
                 </div>
               </div>
             </div>
           )}
 
+          {/* 同步金鑰/匯出匯入 Modal */}
+          {isSyncModalOpen && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+              <div className="fixed inset-0 bg-navy/80 backdrop-blur-sm" onClick={() => setIsSyncModalOpen(false)}></div>
+              <div className="relative w-full max-w-sm p-6 bg-white shadow-2xl rounded-3xl border border-teal/30 text-center">
+                <button onClick={() => setIsSyncModalOpen(false)} className="absolute top-4 right-4 text-teal bg-cream p-1.5 rounded-full"><Icon name="close" /></button>
+                <div className="inline-flex bg-peach p-3 rounded-full mb-4 shadow-inner"><Icon name={isCloudEnabled ? "sync" : "save_alt"} className="text-navy !text-[32px]" /></div>
+                <h3 className="text-xl font-black text-navy mb-2">{isCloudEnabled ? "跨裝置同步設定" : "資料備份與還原"}</h3>
+                
+                {isCloudEnabled ? (
+                  <>
+                    <p className="text-xs font-bold text-teal mb-4 leading-relaxed">此為您的專屬資料庫金鑰。<br/>若要在其他設備登入，請複製並載入此金鑰。</p>
+                    <div className="bg-cream p-3 rounded-xl border border-peach mb-4 flex items-center justify-between">
+                      <span className="font-mono font-bold text-navy text-sm tracking-wider">{crmKey}</span>
+                      <button onClick={() => { navigator.clipboard.writeText(crmKey); alert("金鑰已複製！"); }} className="text-coral hover:opacity-70"><Icon name="content_copy" className="!text-[20px]" /></button>
+                    </div>
+                    <div className="border-t border-teal/20 pt-4 mt-4">
+                      <p className="text-xs font-bold text-navy mb-2">或輸入其他金鑰來載入資料庫：</p>
+                      <div className="flex gap-2">
+                        <input id="importKeyInput" type="text" placeholder="CRM-XXXXX..." className="flex-1 px-3 py-2 bg-white border border-teal/30 rounded-xl outline-none font-mono text-sm uppercase" />
+                        <button onClick={() => { 
+                          const val = document.getElementById('importKeyInput').value.trim(); 
+                          if(val) { localStorage.setItem('crm_secret_key', val.toUpperCase()); window.location.reload(); }
+                        }} className="px-4 py-2 bg-navy text-white font-bold text-sm rounded-xl">載入</button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-bold text-teal mb-6 leading-relaxed">單機模式下資料僅儲存於本瀏覽器。<br/>您可以將資料匯出成檔案，傳至手機或其他設備進行匯入還原。</p>
+                    <div className="space-y-3">
+                      <button onClick={handleExport} className="w-full flex items-center justify-center py-3 bg-navy hover:bg-navy/90 text-white rounded-xl font-bold shadow-md transition-all">
+                        <Icon name="download" className="mr-2 !text-[18px]" /> 下載備份檔 (.json)
+                      </button>
+                      <div className="relative w-full py-3 bg-cream border border-teal/30 hover:border-teal text-navy rounded-xl font-bold overflow-hidden shadow-sm transition-all">
+                        <input type="file" accept=".json" onChange={handleImport} className="absolute inset-0 opacity-0 cursor-pointer" />
+                        <div className="pointer-events-none flex items-center justify-center"><Icon name="upload" className="mr-2 !text-[18px]" /> 載入備份檔</div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* QR Code 分享/邀請 Modal */}
           {isQrModalOpen && (
-            <div className="fixed inset-0 z-[60] overflow-y-auto">
-              <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
-                <div className="fixed inset-0 bg-navy/80 backdrop-blur-sm" onClick={() => setIsQrModalOpen(false)}></div>
-                <div className="relative w-full max-w-sm p-8 my-8 text-center bg-white shadow-2xl rounded-3xl border border-teal/30">
-                  <button onClick={() => setIsQrModalOpen(false)} className="absolute top-4 right-4 text-teal hover:text-navy p-2 rounded-full hover:bg-cream"><Icon name="X" size={20} /></button>
-                  <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-peach mb-6 shadow-inner"><Icon name="QrCode" size={32} className="text-navy" /></div>
-                  <h3 className="text-2xl font-black text-navy mb-2">專屬邀請條碼</h3>
-                  <div className="bg-white p-4 rounded-2xl border-4 border-teal/10 shadow-sm inline-block mb-6 mt-4">
-                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=0081A7&data=${encodeURIComponent(shareUrl)}`} alt="QR Code" className="w-48 h-48" />
-                  </div>
-                  <button onClick={simulateScan} className="w-full flex items-center justify-center mb-6 px-4 py-3 bg-navy hover:bg-navy/90 text-white font-bold rounded-xl transition-colors shadow-lg shadow-navy/30">
-                    <Icon name="ExternalLink" size={20} className="mr-2 text-peach" /> 👉 直接模擬掃碼畫面
-                  </button>
-                  <div className="flex items-center bg-cream p-2 rounded-xl border border-peach">
-                    <input type="text" readOnly value={displayUrl} className="bg-transparent flex-1 outline-none text-xs font-medium text-navy px-2 truncate" />
-                    <button onClick={copyToClipboard} className="ml-2 px-4 py-2 bg-teal hover:bg-navy text-white text-sm font-bold rounded-lg shadow-sm">
-                      {isCopied ? <Icon name="CheckCircle" size={16} /> : <Icon name="Copy" size={16} />}
-                    </button>
-                  </div>
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+              <div className="fixed inset-0 bg-navy/80 backdrop-blur-sm" onClick={() => setIsQrModalOpen(false)}></div>
+              <div className="relative w-full max-w-sm p-6 bg-white shadow-2xl rounded-3xl text-center">
+                <button onClick={() => setIsQrModalOpen(false)} className="absolute top-4 right-4 text-teal bg-cream p-1.5 rounded-full"><Icon name="close" /></button>
+                <div className="mx-auto flex items-center justify-center w-14 h-14 rounded-full bg-peach mb-4 shadow-inner"><Icon name="qr_code" className="!text-[28px] text-navy" /></div>
+                
+                <h3 className="text-xl font-black text-navy mb-2">{isCloudEnabled ? "專屬邀請條碼" : "在手機上開啟系統"}</h3>
+                <p className="text-xs font-bold text-teal mb-4">
+                  {isCloudEnabled 
+                    ? "請對方掃描此條碼，即可開啟專屬名片填寫表單，資料將自動匯入您的資料庫。" 
+                    : "使用手機掃描下方條碼，即可將此系統網址傳送至手機瀏覽器。"}
+                </p>
+                
+                <div className="bg-white p-3 rounded-2xl border-4 border-teal/10 inline-block mb-4">
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=0081A7&data=${encodeURIComponent(qrUrl)}`} alt="QR Code" className="w-40 h-40" />
+                </div>
+                
+                <div className="flex bg-cream p-2 rounded-xl border border-peach text-left items-center">
+                  <input type="text" readOnly value={decodeURI(qrUrl)} className="bg-transparent flex-1 outline-none text-[10px] font-medium text-navy px-1 truncate" />
+                  <button onClick={() => { navigator.clipboard.writeText(decodeURI(qrUrl)); alert("網址已複製！"); }} className="ml-2 px-3 py-1.5 bg-teal hover:bg-navy text-white text-xs font-bold rounded-lg shrink-0 transition-colors">複製</button>
                 </div>
               </div>
             </div>
@@ -744,74 +615,43 @@
     }
 
     // ==========================================
-    // D. 外部訪客專用：填寫表單元件 
+    // 外部訪客專屬表單元件
     // ==========================================
-    function PublicForm({ sharedUid, onBack, handleImageUpload }) {
-      const [formData, setFormData] = useState({
-        name: '', role: '', company: '', email: '', phone: '', lineId: '', instagram: '', otherLink: '', cardImage: '', skills: [], notes: ''
-      });
+    function PublicForm({ sharedKey, onBack, isCloudEnabled, db, auth, handleImageUpload }) {
+      const [formData, setFormData] = useState({ name: '', role: '', company: '', phone: '', email: '', skills: [] });
       const [isSubmitting, setIsSubmitting] = useState(false);
       const [isSuccess, setIsSuccess] = useState(false);
-      
-      const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
       const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.name.trim() || !auth.currentUser) return;
-        setIsSubmitting(true);
-        
-        const contactData = {
-          name: formData.name.trim(), role: formData.role.trim(), company: formData.company.trim(),
-          email: formData.email.trim(), phone: formData.phone.trim(), lineId: formData.lineId.trim(), instagram: formData.instagram.trim(),
-          skills: formData.skills, notes: formData.notes.trim() ? `【本人填寫】${formData.notes.trim()}` : '【透過專屬邀請碼加入】',
-          trustLevel: 3, lastContacted: new Date().toISOString().split('T')[0], category: '新進聯繫',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        };
-
+        if (!isCloudEnabled) { alert("此系統目前處於單機模式，無法接收外部資料。"); return; }
         try {
-          await db.collection(`users/${sharedUid}/contacts`).add(contactData);
+          await auth.signInAnonymously();
+          await db.collection(`crm_dbs/${sharedKey}/contacts`).add({
+            ...formData, category: '新進聯繫', trustLevel: 3, createdAt: Date.now(), updatedAt: Date.now(), notes: '【對方透過邀請碼自行填寫】'
+          });
           setIsSuccess(true);
-        } catch (error) {
-          console.error(error);
-          alert("抱歉，資料提交失敗。");
-        } finally {
-          setIsSubmitting(false);
-        }
+        } catch (err) { alert("傳送失敗。"); }
       };
 
-      if (isSuccess) {
-        return (
-          <div className="min-h-screen bg-cream flex items-center justify-center p-4">
-            <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl max-w-md w-full text-center border border-teal/20">
-              <div className="w-20 h-20 bg-teal/10 rounded-full flex items-center justify-center mx-auto mb-6"><Icon name="CheckCircle" size={40} className="text-navy" /></div>
-              <h2 className="text-2xl font-black text-navy mb-4">資料已成功送出！</h2>
-              <p className="text-teal font-bold mb-8">感謝您的填寫，期待未來有美好的合作機會！</p>
-            </div>
-          </div>
-        );
-      }
+      if (isSuccess) return <div className="min-h-screen bg-cream flex items-center justify-center p-4"><div className="bg-white p-8 rounded-3xl text-center"><Icon name="check_circle" className="!text-[64px] text-teal mb-4"/><h2 className="text-xl font-black text-navy mb-4">名片已成功傳送！</h2></div></div>;
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-navy to-teal flex justify-center items-center py-12 px-4">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-lg w-full relative">
-            <button onClick={onBack} className="absolute top-4 left-4 text-teal hover:text-navy bg-cream p-2 rounded-full"><Icon name="ArrowLeft" size={20} /></button>
-            <div className="text-center mb-6 pt-6">
-              <div className="inline-flex bg-peach p-3 rounded-2xl mb-4 shadow-inner"><Icon name="Briefcase" size={32} className="text-navy" /></div>
-              <h2 className="text-2xl font-black text-navy">建立專業連結</h2>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div><label className="block text-sm font-bold text-navy mb-1">您的稱呼 / 姓名 *</label><input required type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full px-4 py-3 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none font-bold shadow-sm" /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-bold text-navy mb-1">職稱</label><input type="text" name="role" value={formData.role} onChange={handleInputChange} className="w-full px-4 py-3 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none font-medium shadow-sm" /></div>
-                <div><label className="block text-sm font-bold text-navy mb-1">公司</label><input type="text" name="company" value={formData.company} onChange={handleInputChange} className="w-full px-4 py-3 bg-white border border-teal/30 rounded-xl focus:ring-2 focus:ring-teal outline-none font-medium shadow-sm" /></div>
+        <div className="min-h-screen bg-navy flex justify-center items-center py-8 px-4">
+          <div className="bg-white p-6 rounded-3xl w-full max-w-sm relative">
+            <h2 className="text-xl font-black text-navy text-center mb-6 border-b border-teal/20 pb-4">交換專業名片</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div><label className="text-xs font-bold text-navy block mb-1">您的稱呼 *</label><input required type="text" onChange={e=>setFormData(p=>({...p, name: e.target.value}))} className="w-full p-3 bg-cream border border-peach rounded-xl text-sm" /></div>
+              <div className="flex gap-3">
+                <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">職稱</label><input type="text" onChange={e=>setFormData(p=>({...p, role: e.target.value}))} className="w-full p-3 bg-cream border border-peach rounded-xl text-sm" /></div>
+                <div className="w-1/2"><label className="text-xs font-bold text-navy block mb-1">公司</label><input type="text" onChange={e=>setFormData(p=>({...p, company: e.target.value}))} className="w-full p-3 bg-cream border border-peach rounded-xl text-sm" /></div>
               </div>
+              <div><label className="text-xs font-bold text-navy block mb-1">電話</label><input type="tel" onChange={e=>setFormData(p=>({...p, phone: e.target.value}))} className="w-full p-3 bg-cream border border-peach rounded-xl text-sm" /></div>
               <div className="pt-2">
-                <label className="block text-sm font-bold text-navy mb-1 flex items-center"><Icon name="Tag" size={16} className="text-coral mr-1.5" />您的專業專長</label>
-                <HashtagInput value={formData.skills} onChange={(newSkills) => setFormData(p => ({ ...p, skills: newSkills }))} suggestions={PREDEFINED_TAGS} />
+                <label className="text-xs font-bold text-navy block mb-2"><Icon name="tag" className="!text-[14px] text-coral mr-1"/>您的專業標籤</label>
+                <HashtagInput value={formData.skills} onChange={(s) => setFormData(p => ({ ...p, skills: s }))} />
               </div>
-              <button type="submit" disabled={isSubmitting} className="w-full mt-4 py-3.5 rounded-xl bg-coral text-white font-black hover:opacity-90 shadow-lg shadow-coral/30 flex justify-center items-center">
-                {isSubmitting ? <Icon name="Loader2" size={24} className="animate-spin" /> : '送出資料，建立連結'}
-              </button>
+              <button type="submit" className="w-full py-3.5 bg-coral text-white font-black rounded-xl shadow-lg mt-4">送出資料</button>
             </form>
           </div>
         </div>
